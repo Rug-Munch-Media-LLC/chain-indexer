@@ -65,7 +65,8 @@ export async function syncToR2(): Promise<void> {
       --progress \
       --transfers 4 \
       --checkers 8 \
-      --ignore-existing \
+      --max-age 5m \
+      --ignore-errors \
       --no-update-modtime`;
 
     const output = execSync(cmd, {

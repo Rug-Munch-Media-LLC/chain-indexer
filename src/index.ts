@@ -112,19 +112,23 @@ const syncInterval = setInterval(
 // Graceful shutdown
 // ---------------------------------------------------------------------------
 
-process.on('SIGTERM', async () => {
+process.on('SIGTERM', () => {
   logger.info('SIGTERM received — shutting down');
   clearInterval(syncInterval);
 
-  // Final sync before exit
-  try {
-    await syncToR2();
-    logger.info('Final R2 sync complete');
-  } catch (err) {
-    logger.error({ err }, 'Final R2 sync failed');
-  }
+  // Final sync with 30s timeout (don't hang shutdown on large syncs)
+  const timeout = setTimeout(() => {
+    logger.warn('Final R2 sync timed out — exiting');
+    process.exit(0);
+  }, 30_000);
 
-  process.exit(0);
+  syncToR2()
+    .then(() => logger.info('Final R2 sync complete'))
+    .catch((err) => logger.error({ err }, 'Final R2 sync failed'))
+    .finally(() => {
+      clearTimeout(timeout);
+      process.exit(0);
+    });
 });
 
 process.on('SIGINT', () => {
