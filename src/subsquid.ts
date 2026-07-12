@@ -1,11 +1,10 @@
 /**
  * Subsquid-based EVM ingestion via Pipes SDK.
- * Streams decoded Transfer & Swap events → writes NDJSON batches to disk.
- *
- * Falls back to free RPC pool if Subsquid is unavailable.
+ * Streams decoded ERC-20 Transfer events → writes NDJSON batches to disk.
  */
 
-import { mkdirSync, writeFileSync, appendFileSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, appendFileSync, existsSync, readFileSync } from 'node:fs';
+import { renameSync } from 'node:fs';
 import { join } from 'node:path';
 import pino from 'pino';
 import type { ChainConfig } from './chains.js';
@@ -21,7 +20,7 @@ interface ERC20Transfer {
   type: 'transfer';
   chain: string;
   blockNumber: number;
-  blockTimestamp: number;
+  blockTimestamp: string;
   txHash: string;
   logIndex: number;
   from: string;
@@ -30,31 +29,13 @@ interface ERC20Transfer {
   value: string;
 }
 
-interface DexSwap {
-  type: 'swap';
-  chain: string;
-  blockNumber: number;
-  blockTimestamp: number;
-  txHash: string;
-  contractAddress: string;
-  sender: string;
-  recipient: string;
-  tokenIn: string;
-  tokenOut: string;
-  amountIn: string;
-  amountOut: string;
-  dexName: string;
-}
-
-type IngestedEvent = ERC20Transfer | DexSwap;
-
 // ---------------------------------------------------------------------------
 // State persistence
 // ---------------------------------------------------------------------------
 
 interface ChainState {
   lastBlock: number;
-  lastTimestamp: number;
+  lastTimestamp: string;
   source: 'subsquid' | 'rpc' | 'stopped';
 }
 
@@ -62,10 +43,10 @@ function loadState(chainId: string): ChainState {
   const path = join(STATE_DIR, `${chainId}.json`);
   try {
     if (existsSync(path)) {
-      return JSON.parse(require('node:fs').readFileSync(path, 'utf-8'));
+      return JSON.parse(readFileSync(path, 'utf-8'));
     }
   } catch {}
-  return { lastBlock: 0, lastTimestamp: 0, source: 'subsquid' };
+  return { lastBlock: 0, lastTimestamp: '', source: 'subsquid' };
 }
 
 function saveState(chainId: string, state: ChainState) {
@@ -73,14 +54,14 @@ function saveState(chainId: string, state: ChainState) {
   const tmp = join(STATE_DIR, `${chainId}.tmp`);
   const dst = join(STATE_DIR, `${chainId}.json`);
   writeFileSync(tmp, JSON.stringify(state, null, 2));
-  require('node:fs').renameSync(tmp, dst);
+  renameSync(tmp, dst);
 }
 
 // ---------------------------------------------------------------------------
 // NDJSON writer (partitioned by chain/date)
 // ---------------------------------------------------------------------------
 
-function writeBatch(chainId: string, events: IngestedEvent[]) {
+function writeBatch(chainId: string, events: ERC20Transfer[]) {
   if (events.length === 0) return;
 
   const now = new Date();
@@ -96,7 +77,7 @@ function writeBatch(chainId: string, events: IngestedEvent[]) {
 }
 
 // ---------------------------------------------------------------------------
-// Subsquid ingestion via Pipes SDK
+// Subsquid ingestion via Pipes SDK (ERC-20 Transfers only)
 // ---------------------------------------------------------------------------
 
 export async function ingestEvmChain(cfg: ChainConfig): Promise<void> {
@@ -107,64 +88,42 @@ export async function ingestEvmChain(cfg: ChainConfig): Promise<void> {
     return;
   }
 
-  logger.info({ chain: cfg.id, network: cfg.subsquidNetwork }, 'Starting Subsquid ingestion');
+  logger.info(
+    { chain: cfg.id, network: cfg.subsquidNetwork, fromBlock: state.lastBlock },
+    'Starting Subsquid ingestion',
+  );
 
-  // Use the Subsquid Pipes SDK for EVM data streaming
-  // The Pipes SDK handles: batching, retries, rate limiting, ABI decoding
   try {
     const { evmPortalSource, evmDecoder, commonAbis } = await import('@subsquid/pipes/evm');
 
     const stream = evmPortalSource({
       portal: `https://portal.sqd.dev/datasets/${cfg.subsquidNetwork}`,
-      fromBlock: state.lastBlock || undefined,
     }).pipe(
       evmDecoder({
-        events: {
-          transfers: commonAbis.erc20.events.Transfer,
-          swaps: [commonAbis.uniswapV3.events.Swap],
-        },
+        events: { Transfer: commonAbis.erc20.events.Transfer },
+        range: { from: 0 },
       }),
     );
 
-    let batch: IngestedEvent[] = [];
+    let batch: ERC20Transfer[] = [];
     const BATCH_SIZE = 10000;
+    let lastLoggedBlock = state.lastBlock;
 
     for await (const chunk of stream) {
-      const blockNum = chunk.header?.number;
-      const blockTs = chunk.header?.timestamp;
+      const transfers = chunk.data?.Transfer ?? [];
 
-      // Process transfers
-      for (const tx of chunk.data.transfers ?? []) {
+      for (const tx of transfers) {
         batch.push({
           type: 'transfer',
           chain: cfg.id,
-          blockNumber: blockNum ?? 0,
-          blockTimestamp: blockTs ?? 0,
-          txHash: tx.transaction.hash,
-          logIndex: tx.logIndex ?? 0,
-          from: tx.from,
-          to: tx.to,
-          tokenAddress: tx.address,
-          value: tx.value.toString(),
-        });
-      }
-
-      // Process swaps
-      for (const tx of chunk.data.swaps ?? []) {
-        batch.push({
-          type: 'swap',
-          chain: cfg.id,
-          blockNumber: blockNum ?? 0,
-          blockTimestamp: blockTs ?? 0,
-          txHash: tx.transaction.hash,
-          contractAddress: tx.address,
-          sender: tx.sender,
-          recipient: tx.recipient,
-          tokenIn: tx.token0,
-          tokenOut: tx.token1,
-          amountIn: tx.amount0.toString(),
-          amountOut: tx.amount1.toString(),
-          dexName: 'UniswapV3',
+          blockNumber: tx.block?.number ?? 0,
+          blockTimestamp: String(tx.timestamp ?? ''),
+          txHash: tx.rawEvent?.transactionHash ?? '',
+          logIndex: tx.rawEvent?.logIndex ?? 0,
+          from: tx.event?.from ?? '0x',
+          to: tx.event?.to ?? '0x',
+          tokenAddress: tx.contract ?? '0x',
+          value: String(tx.event?.value ?? '0'),
         });
       }
 
@@ -173,20 +132,26 @@ export async function ingestEvmChain(cfg: ChainConfig): Promise<void> {
         writeBatch(cfg.id, batch.splice(0));
       }
 
-      // Update state every 1000 blocks
-      if (blockNum && blockNum % 1000 === 0) {
-        state.lastBlock = blockNum;
-        state.lastTimestamp = blockTs ?? state.lastTimestamp;
-        state.source = 'subsquid';
-        saveState(cfg.id, state);
-        logger.info({ chain: cfg.id, block: blockNum, batch: batch.length }, 'Progress');
+      // State update & progress log every ~1000 blocks
+      if (transfers.length > 0) {
+        const latestBlock = transfers[transfers.length - 1].block?.number;
+        if (latestBlock && latestBlock - lastLoggedBlock >= 1000) {
+          state.lastBlock = latestBlock;
+          state.lastTimestamp = String(
+            transfers[transfers.length - 1].timestamp ?? state.lastTimestamp,
+          );
+          state.source = 'subsquid';
+          saveState(cfg.id, state);
+          lastLoggedBlock = latestBlock;
+          logger.info({ chain: cfg.id, block: latestBlock, batch: batch.length }, 'Progress');
+        }
       }
     }
 
     // Final flush
     writeBatch(cfg.id, batch.splice(0));
     saveState(cfg.id, state);
-    logger.info({ chain: cfg.id }, 'Subsquid stream ended — ingestion complete');
+    logger.info({ chain: cfg.id, lastBlock: state.lastBlock }, 'Subsquid stream complete');
   } catch (err) {
     logger.error({ chain: cfg.id, err }, 'Subsquid ingestion failed');
     throw err;
