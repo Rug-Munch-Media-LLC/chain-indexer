@@ -96,10 +96,96 @@ export const CHAINS: Record<string, ChainConfig> = {
     blockTime: 3,
     confirmations: 19,
   },
+
+  // ── Added: major L2s + alt L1s ──
+
+  optimism: {
+    id: 'optimism',
+    name: 'Optimism',
+    subsquidNetwork: 'optimism-mainnet',
+    rpcPool: [
+      'https://mainnet.optimism.io',
+      'https://optimism.llamarpc.com',
+      'https://optimism.drpc.org',
+      'https://optimism-mainnet.public.blastapi.io',
+    ],
+    blockTime: 2,
+    confirmations: 12,
+  },
+
+  avalanche: {
+    id: 'avalanche',
+    name: 'Avalanche C-Chain',
+    subsquidNetwork: 'avalanche-mainnet',
+    rpcPool: [
+      'https://api.avax.network/ext/bc/C/rpc',
+      'https://avalanche.drpc.org',
+      'https://avax.meowrpc.com',
+    ],
+    blockTime: 2,
+    confirmations: 12,
+  },
+
+  gnosis: {
+    id: 'gnosis',
+    name: 'Gnosis Chain',
+    subsquidNetwork: 'gnosis-mainnet',
+    rpcPool: [
+      'https://rpc.gnosischain.com',
+      'https://gnosis.drpc.org',
+      'https://gnosis-rpc.publicnode.com',
+    ],
+    blockTime: 5,
+    confirmations: 12,
+  },
+
+  fantom: {
+    id: 'fantom',
+    name: 'Fantom Opera',
+    subsquidNetwork: 'fantom-mainnet',
+    rpcPool: ['https://rpcapi.fantom.network', 'https://rpc.ftm.tools', 'https://fantom.drpc.org'],
+    blockTime: 1,
+    confirmations: 12,
+  },
+
+  linea: {
+    id: 'linea',
+    name: 'Linea',
+    subsquidNetwork: 'linea-mainnet',
+    rpcPool: [
+      'https://rpc.linea.build',
+      'https://linea.drpc.org',
+      'https://linea-rpc.publicnode.com',
+    ],
+    blockTime: 2,
+    confirmations: 12,
+  },
+
+  celo: {
+    id: 'celo',
+    name: 'Celo',
+    subsquidNetwork: 'celo-mainnet',
+    rpcPool: ['https://forno.celo.org', 'https://celo.drpc.org'],
+    blockTime: 5,
+    confirmations: 12,
+  },
 };
 
 /** Chains to actually index (comment out to disable). */
-export const ENABLED_CHAINS: string[] = ['ethereum', 'bsc', 'arbitrum', 'base', 'polygon', 'tron'];
+export const ENABLED_CHAINS: string[] = [
+  'ethereum',
+  'bsc',
+  'arbitrum',
+  'base',
+  'polygon',
+  'optimism',
+  'avalanche',
+  'gnosis',
+  'fantom',
+  'linea',
+  'celo',
+  'tron',
+];
 
 export const DATA_DIR = process.env.DATA_DIR || '/srv/data/chain-indexer/jsonl';
 export const STATE_DIR = process.env.STATE_DIR || '/srv/data/chain-indexer/state';
