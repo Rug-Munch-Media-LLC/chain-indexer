@@ -16,8 +16,10 @@ import pino from 'pino';
 import { program } from 'commander';
 import { CHAINS, ENABLED_CHAINS, DATA_DIR, STATE_DIR, type ChainConfig } from './chains.js';
 import { ingestEvmChain } from './subsquid.js';
+import { ingestDexChain } from './dex.js';
 import { ingestTron } from './tron.js';
 import { syncToR2 } from './sync.js';
+import { startParquetScheduler } from './parquet.js';
 
 const logger = pino({
   name: 'chain-indexer',
@@ -82,7 +84,8 @@ const runners = chains.map(async (cfg) => {
         await new Promise((r) => setTimeout(r, cfg.blockTime * 1000 * 20)); // sleep ~1 min
       } else if (cfg.subsquidNetwork) {
         // EVM: Subsquid stream (long-running, auto-resumes on error)
-        await ingestEvmChain(cfg);
+        // Run ERC-20 transfer ingestion + DEX swap/liquidity ingestion concurrently
+        await Promise.all([ingestEvmChain(cfg), ingestDexChain(cfg)]);
       } else {
         logger.warn({ chain: cfg.id }, 'No ingestion method configured');
       }
@@ -109,12 +112,19 @@ const syncInterval = setInterval(
 );
 
 // ---------------------------------------------------------------------------
+// Hourly NDJSON → Parquet conversion (auto-starts at next hour, then periodic)
+// ---------------------------------------------------------------------------
+
+const parquetInterval = startParquetScheduler();
+
+// ---------------------------------------------------------------------------
 // Graceful shutdown
 // ---------------------------------------------------------------------------
 
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received — shutting down');
   clearInterval(syncInterval);
+  clearInterval(parquetInterval);
 
   // Final sync with 30s timeout (don't hang shutdown on large syncs)
   const timeout = setTimeout(() => {

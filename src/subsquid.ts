@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import pino from 'pino';
 import type { ChainConfig } from './chains.js';
 import { DATA_DIR, STATE_DIR } from './chains.js';
+import { resolveToken } from './metadata.js';
 
 const logger = pino({ name: 'subsquid' });
 
@@ -27,6 +28,9 @@ interface ERC20Transfer {
   to: string;
   tokenAddress: string;
   value: string;
+  /** Resolved token metadata (added during batch write — null when unknown) */
+  tokenSymbol: string | null;
+  tokenName: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -64,6 +68,16 @@ function saveState(chainId: string, state: ChainState) {
 function writeBatch(chainId: string, events: ERC20Transfer[]) {
   if (events.length === 0) return;
 
+  // Enrich with token metadata before writing
+  const enriched = events.map((e) => {
+    const meta = resolveToken(chainId, e.tokenAddress);
+    return {
+      ...e,
+      tokenSymbol: meta?.symbol ?? null,
+      tokenName: meta?.name ?? null,
+    };
+  });
+
   const now = new Date();
   const yyyy = now.getUTCFullYear();
   const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
@@ -72,7 +86,7 @@ function writeBatch(chainId: string, events: ERC20Transfer[]) {
   mkdirSync(dir, { recursive: true });
   const file = join(dir, `events.jsonl`);
 
-  const lines = events.map((e) => JSON.stringify(e)).join('\n') + '\n';
+  const lines = enriched.map((e) => JSON.stringify(e)).join('\n') + '\n';
   appendFileSync(file, lines);
 }
 
@@ -124,6 +138,8 @@ export async function ingestEvmChain(cfg: ChainConfig): Promise<void> {
           to: tx.event?.to ?? '0x',
           tokenAddress: tx.contract ?? '0x',
           value: String(tx.event?.value ?? '0'),
+          tokenSymbol: null,
+          tokenName: null,
         });
       }
 
@@ -152,8 +168,8 @@ export async function ingestEvmChain(cfg: ChainConfig): Promise<void> {
     writeBatch(cfg.id, batch.splice(0));
     saveState(cfg.id, state);
     logger.info({ chain: cfg.id, lastBlock: state.lastBlock }, 'Subsquid stream complete');
-  } catch (err) {
+  } catch (err: unknown) {
     logger.error({ chain: cfg.id, err }, 'Subsquid ingestion failed');
-    throw err;
+    throw err as any;
   }
 }

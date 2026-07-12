@@ -187,5 +187,84 @@ export const ENABLED_CHAINS: string[] = [
   'tron',
 ];
 
+// ---------------------------------------------------------------------------
+// DEX contract addresses per chain
+// ---------------------------------------------------------------------------
+
+export interface DexContract {
+  name: string;
+  v2Factory?: string;
+  v3Factory?: string;
+  router?: string;
+}
+
+/**
+ * Known DEX factory/router addresses per chain.
+ * Used by dex.ts to tag swap/liquidity events with the correct DEX name.
+ */
+export const DEX_CONFIGS: Record<string, DexContract[]> = {
+  ethereum: [
+    {
+      name: 'uniswap_v2',
+      v2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
+      router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
+    },
+    {
+      name: 'uniswap_v3',
+      v3Factory: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
+    },
+    {
+      name: 'sushiswap',
+      v2Factory: '0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac',
+      router: '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F',
+    },
+  ],
+
+  bsc: [
+    {
+      name: 'pancakeswap',
+      v2Factory: '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73',
+      router: '0x10ED43C718714eb63d5aA57B78B54704E256024E',
+    },
+  ],
+
+  polygon: [
+    {
+      name: 'quickswap',
+      v2Factory: '0x5757371414417b8C6CAad45bAeF941aBC7d3Ab32',
+      router: '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff',
+    },
+  ],
+
+  arbitrum: [
+    {
+      name: 'uniswap_v3',
+      v3Factory: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
+    },
+  ],
+
+  base: [
+    {
+      name: 'uniswap_v3',
+      v3Factory: '0x33128a8fC17869897dcE68Ed026d694621f6FDfD',
+    },
+  ],
+
+  optimism: [
+    {
+      name: 'uniswap_v3',
+      v3Factory: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
+    },
+  ],
+
+  avalanche: [
+    {
+      name: 'traderjoe',
+      v2Factory: '0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10',
+      router: '0x60aE616a2155Ee3d9A68541Ba4544862310933d4',
+    },
+  ],
+};
+
 export const DATA_DIR = process.env.DATA_DIR || '/srv/data/chain-indexer/jsonl';
 export const STATE_DIR = process.env.STATE_DIR || '/srv/data/chain-indexer/state';
