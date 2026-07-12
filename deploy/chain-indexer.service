@@ -1,0 +1,26 @@
+[Unit]
+Description=Chain Indexer — Multi-chain blockchain data ingestion
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/srv/work/repos/chain-indexer
+Environment=NODE_ENV=production
+Environment=DATA_DIR=/srv/data/chain-indexer/jsonl
+Environment=STATE_DIR=/srv/data/chain-indexer/state
+EnvironmentFile=/srv/work/repos/chain-indexer/.env
+
+ExecStart=/usr/bin/node --import tsx /srv/work/repos/chain-indexer/src/index.ts
+Restart=always
+RestartSec=10
+LimitNOFILE=65536
+MemoryMax=4G
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=chain-indexer
+
+[Install]
+WantedBy=multi-user.target
