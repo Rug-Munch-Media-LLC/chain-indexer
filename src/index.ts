@@ -17,6 +17,7 @@ import { program } from 'commander';
 import { CHAINS, ENABLED_CHAINS, DATA_DIR, STATE_DIR, type ChainConfig } from './chains.js';
 import { ingestEvmChain } from './subsquid.js';
 import { ingestDexChain } from './dex.js';
+import { ingestDeployers } from './deployers.js';
 import { ingestTron } from './tron.js';
 import { syncToR2 } from './sync.js';
 import { startParquetScheduler } from './parquet.js';
@@ -84,8 +85,8 @@ const runners = chains.map(async (cfg) => {
         await new Promise((r) => setTimeout(r, cfg.blockTime * 1000 * 20)); // sleep ~1 min
       } else if (cfg.subsquidNetwork) {
         // EVM: Subsquid stream (long-running, auto-resumes on error)
-        // Run ERC-20 transfer ingestion + DEX swap/liquidity ingestion concurrently
-        await Promise.all([ingestEvmChain(cfg), ingestDexChain(cfg)]);
+        // Run ERC-20 + DEX + deployer tracking concurrently per chain
+        await Promise.all([ingestEvmChain(cfg), ingestDexChain(cfg), ingestDeployers(cfg)]);
       } else {
         logger.warn({ chain: cfg.id }, 'No ingestion method configured');
       }
