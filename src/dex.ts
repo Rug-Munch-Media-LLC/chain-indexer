@@ -172,17 +172,17 @@ export interface DexEvent {
 // ---------------------------------------------------------------------------
 
 const WHALE_THRESHOLDS: Record<string, bigint> = {
-  ethereum: BigInt('10_000_000_000_000_000_000'),       // 10 ETH
-  bsc:      BigInt('50_000_000_000_000_000_000'),       // 50 BNB
-  polygon:  BigInt('50_000_000_000_000_000_000_000'),   // 50K MATIC
-  arbitrum: BigInt('10_000_000_000_000_000_000'),       // 10 ETH
-  base:     BigInt('10_000_000_000_000_000_000'),       // 10 ETH
-  optimism: BigInt('10_000_000_000_000_000_000'),       // 10 ETH
-  avalanche:BigInt('500_000_000_000_000_000_000'),      // 500 AVAX
-  gnosis:   BigInt('50_000_000_000_000_000_000'),       // 50 xDAI
-  fantom:   BigInt('500_000_000_000_000_000_000'),      // 500 FTM
-  linea:    BigInt('10_000_000_000_000_000_000'),       // 10 ETH
-  celo:     BigInt('50_000_000_000_000_000_000'),       // 50 CELO
+  ethereum: BigInt('10000000000000000000'), // 10 ETH
+  bsc: BigInt('50000000000000000000'), // 50 BNB
+  polygon: BigInt('50000000000000000000000'), // 50K MATIC
+  arbitrum: BigInt('10000000000000000000'), // 10 ETH
+  base: BigInt('10000000000000000000'), // 10 ETH
+  optimism: BigInt('10000000000000000000'), // 10 ETH
+  avalanche: BigInt('500000000000000000000'), // 500 AVAX
+  gnosis: BigInt('50000000000000000000'), // 50 xDAI
+  fantom: BigInt('500000000000000000000'), // 500 FTM
+  linea: BigInt('10000000000000000000'), // 10 ETH
+  celo: BigInt('50000000000000000000'), // 50 CELO
 };
 
 function isWhale(value: bigint, chain: string): boolean {
@@ -257,7 +257,9 @@ function loadDexState(chainId: string): DexState {
     if (existsSync(path)) {
       return JSON.parse(readFileSync(path, 'utf-8'));
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return { lastBlock: 0, lastTimestamp: '' };
 }
 
@@ -312,7 +314,7 @@ export async function ingestDexChain(cfg: ChainConfig): Promise<void> {
 
     for await (const chunk of stream) {
       // --- V2 Swaps ---
-      for (const tx of (chunk.data?.SwapV2 ?? [])) {
+      for (const tx of chunk.data?.SwapV2 ?? []) {
         const amt0In: bigint = tx.event?.amount0In ?? 0n;
         const amt1In: bigint = tx.event?.amount1In ?? 0n;
         const amt0Out: bigint = tx.event?.amount0Out ?? 0n;
@@ -336,13 +338,16 @@ export async function ingestDexChain(cfg: ChainConfig): Promise<void> {
           amount1In: String(amt1In),
           amount0Out: String(amt0Out),
           amount1Out: String(amt1Out),
-          whale: isWhale(amt0In, cfg.id) || isWhale(amt1In, cfg.id)
-              || isWhale(amt0Out, cfg.id) || isWhale(amt1Out, cfg.id),
+          whale:
+            isWhale(amt0In, cfg.id) ||
+            isWhale(amt1In, cfg.id) ||
+            isWhale(amt0Out, cfg.id) ||
+            isWhale(amt1Out, cfg.id),
         });
       }
 
       // --- V3 Swaps ---
-      for (const tx of (chunk.data?.SwapV3 ?? [])) {
+      for (const tx of chunk.data?.SwapV3 ?? []) {
         const amt0: bigint = tx.event?.amount0 ?? 0n;
         const amt1: bigint = tx.event?.amount1 ?? 0n;
 
@@ -367,7 +372,7 @@ export async function ingestDexChain(cfg: ChainConfig): Promise<void> {
       }
 
       // --- V2 Mints ---
-      for (const tx of (chunk.data?.MintV2 ?? [])) {
+      for (const tx of chunk.data?.MintV2 ?? []) {
         const amt0: bigint = tx.event?.amount0 ?? 0n;
         const amt1: bigint = tx.event?.amount1 ?? 0n;
 
@@ -391,7 +396,7 @@ export async function ingestDexChain(cfg: ChainConfig): Promise<void> {
       }
 
       // --- V2 Burns ---
-      for (const tx of (chunk.data?.BurnV2 ?? [])) {
+      for (const tx of chunk.data?.BurnV2 ?? []) {
         const amt0: bigint = tx.event?.amount0 ?? 0n;
         const amt1: bigint = tx.event?.amount1 ?? 0n;
 
@@ -416,7 +421,7 @@ export async function ingestDexChain(cfg: ChainConfig): Promise<void> {
       }
 
       // --- V3 Mints ---
-      for (const tx of (chunk.data?.MintV3 ?? [])) {
+      for (const tx of chunk.data?.MintV3 ?? []) {
         const amt0: bigint = tx.event?.amount0 ?? 0n;
         const amt1: bigint = tx.event?.amount1 ?? 0n;
 
@@ -441,7 +446,7 @@ export async function ingestDexChain(cfg: ChainConfig): Promise<void> {
       }
 
       // --- V3 Burns ---
-      for (const tx of (chunk.data?.BurnV3 ?? [])) {
+      for (const tx of chunk.data?.BurnV3 ?? []) {
         const amt0: bigint = tx.event?.amount0 ?? 0n;
         const amt1: bigint = tx.event?.amount1 ?? 0n;
 
