@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-BOT_TOKEN="${ALERT_BOT_TOKEN:-8720275246:AAEfhB51nAkedIUIRZtLHV0i0wxMBgqmins}"
+BOT_TOKEN="${ALERT_BOT_TOKEN:?ALERT_BOT_TOKEN must be set}"
 ALERTS_CHAT="${ALERTS_CHAT:--1003818352164}" # CRYPTO_ALERTS
 ALPHA_CHAT="${ALPHA_CHAT:--1003762675055}"   # CRYPTO_ALPHA
 DATA_DIR="${DATA_DIR:-/srv/data/chain-indexer/jsonl}"
@@ -14,8 +14,8 @@ LAST_RUN_FILE="$STATE_DIR/alpha_alert_last_run"
 
 # Channel routing: urgent → ALERTS, alpha → ALPHA
 send_alert() {
-    local chat_id="$1" msg="$2"
-    python3 -c "
+	local chat_id="$1" msg="$2"
+	python3 -c "
 import urllib.request, urllib.parse, sys
 qs = urllib.parse.urlencode({'chat_id': '$chat_id', 'text': '''$msg''', 'parse_mode': 'HTML', 'disable_web_page_preview': 'true'})
 try:
@@ -29,8 +29,8 @@ except Exception as e:
 
 # Query ClickHouse: get labels for an address
 get_labels() {
-    local addr="$1"
-    python3 -c "
+	local addr="$1"
+	python3 -c "
 import urllib.request, urllib.parse
 sql = f\"SELECT label FROM wallet_labels WHERE address = '${addr,,}' GROUP BY label\"
 qs = urllib.parse.urlencode({'query': sql, 'user': 'default', 'password': '', 'database': 'default'})
@@ -44,9 +44,9 @@ except: pass
 
 # Query chain-indexer: get deployer for a token
 get_deployer() {
-    local chain="$1" token="$2"
-    find "$DATA_DIR/$chain/deployers" -name 'deployments.jsonl' -newermt "7 days ago" 2>/dev/null | while read -r f; do
-        python3 -c "
+	local chain="$1" token="$2"
+	find "$DATA_DIR/$chain/deployers" -name 'deployments.jsonl' -newermt "7 days ago" 2>/dev/null | while read -r f; do
+		python3 -c "
 import json
 with open('$f') as fh:
     for line in fh:
@@ -57,16 +57,16 @@ with open('$f') as fh:
                 exit(0)
         except: pass
 "
-        [ $? -eq 0 ] && break
-    done
+		[ $? -eq 0 ] && break
+	done
 }
 
 # ── Signal Detectors ──
 
 detect_dev_dump() {
-    # Deployer wallet selling their own token → Critical
-    local chain="$1" file="$2"
-    python3 -c "
+	# Deployer wallet selling their own token → Critical
+	local chain="$1" file="$2"
+	python3 -c "
 import json, subprocess, sys
 with open('$file') as f:
     for line in f:
@@ -88,9 +88,9 @@ with open('$file') as f:
 }
 
 detect_labeled_whale_action() {
-    # Known entity (CEX, whale, fund) making large moves
-    local chain="$1" file="$2"
-    python3 -c "
+	# Known entity (CEX, whale, fund) making large moves
+	local chain="$1" file="$2"
+	python3 -c "
 import json, subprocess, sys
 with open('$file') as f:
     for line in f:
@@ -123,8 +123,8 @@ with open('$file') as f:
 }
 
 detect_liquidity_pull() {
-    # Large Burn event on DEX = LP removal = potential rug
-    python3 -c "
+	# Large Burn event on DEX = LP removal = potential rug
+	python3 -c "
 import json, sys
 with open('$1') as f:
     for line in f:
@@ -143,8 +143,8 @@ with open('$1') as f:
 }
 
 detect_new_whale_buy() {
-    # First large buy on a token (potential alpha)
-    python3 -c "
+	# First large buy on a token (potential alpha)
+	python3 -c "
 import json, sys
 with open('$1') as f:
     for line in f:
@@ -172,67 +172,67 @@ NOW=$(date -u +%s)
 echo "=== Alpha Alert Run — $(date -u) ==="
 
 for chain_dir in "$DATA_DIR"/*/; do
-    chain=$(basename "$chain_dir")
+	chain=$(basename "$chain_dir")
 
-    # DEX events
-    dex_dir="$chain_dir/dex"
-    if [ -d "$dex_dir" ]; then
-        find "$dex_dir" -name 'events.jsonl' -newermt "@$LAST_RUN" 2>/dev/null | while read -r dex_file; do
+	# DEX events
+	dex_dir="$chain_dir/dex"
+	if [ -d "$dex_dir" ]; then
+		find "$dex_dir" -name 'events.jsonl' -newermt "@$LAST_RUN" 2>/dev/null | while read -r dex_file; do
 
-            # 1. Dev dumps
-            detect_dev_dump "$chain" "$dex_file" | while IFS='|' read -r sig chain token amt tx; do
-                msg="🔴 <b>DEV DUMP</b> on $chain
+			# 1. Dev dumps
+			detect_dev_dump "$chain" "$dex_file" | while IFS='|' read -r sig chain token amt tx; do
+				msg="🔴 <b>DEV DUMP</b> on $chain
 Token: $token
 Amount: $amt
 TX: $tx
 <i>Deployer selling their own token</i>"
-                send_alert "$ALERTS_CHAT" "$msg"
-            done
+				send_alert "$ALERTS_CHAT" "$msg"
+			done
 
-            # 2. Labeled whale actions
-            detect_labeled_whale_action "$chain" "$dex_file" | while IFS='|' read -r sig chain sender labels dex amt; do
-                emoji="🐋"
-                [ "$sig" = "CEX_DEPOSIT" ] && emoji="🏦"
-                [ "$sig" = "SCAM_WALLET_ACTIVE" ] && emoji="⚠️"
-                [ "$sig" = "MEV_ACTIVITY" ] && emoji="🤖"
+			# 2. Labeled whale actions
+			detect_labeled_whale_action "$chain" "$dex_file" | while IFS='|' read -r sig chain sender labels dex amt; do
+				emoji="🐋"
+				[ "$sig" = "CEX_DEPOSIT" ] && emoji="🏦"
+				[ "$sig" = "SCAM_WALLET_ACTIVE" ] && emoji="⚠️"
+				[ "$sig" = "MEV_ACTIVITY" ] && emoji="🤖"
 
-                msg="$emoji <b>$sig</b> on $chain
+				msg="$emoji <b>$sig</b> on $chain
 Sender: $sender [$labels]
 DEX: $dex | Amount: $amt"
 
-                if [ "$sig" = "SCAM_WALLET_ACTIVE" ] || [ "$sig" = "CEX_DEPOSIT" ]; then
-                    send_alert "$ALERTS_CHAT" "$msg"
-                else
-                    send_alert "$ALPHA_CHAT" "$msg"
-                fi
-            done
+				if [ "$sig" = "SCAM_WALLET_ACTIVE" ] || [ "$sig" = "CEX_DEPOSIT" ]; then
+					send_alert "$ALERTS_CHAT" "$msg"
+				else
+					send_alert "$ALPHA_CHAT" "$msg"
+				fi
+			done
 
-            # 3. Liquidity pulls
-            detect_liquidity_pull "$dex_file" | while IFS='|' read -r sig chain pool details; do
-                msg="🚨 <b>LIQUIDITY PULL</b> on $chain
+			# 3. Liquidity pulls
+			detect_liquidity_pull "$dex_file" | while IFS='|' read -r sig chain pool details; do
+				msg="🚨 <b>LIQUIDITY PULL</b> on $chain
 Pool: $pool
 $details
 <i>Possible rug pull in progress</i>"
-                send_alert "$ALERTS_CHAT" "$msg"
-            done
+				send_alert "$ALERTS_CHAT" "$msg"
+			done
 
-            # 4. New whale buys (alpha)
-            detect_new_whale_buy "$dex_file" | while IFS='|' read -r sig chain token sender dex; do
-                msg="🐋 <b>NEW WHALE BUY</b> on $chain
+			# 4. New whale buys (alpha)
+			detect_new_whale_buy "$dex_file" | while IFS='|' read -r sig chain token sender dex; do
+				msg="🐋 <b>NEW WHALE BUY</b> on $chain
 Token: $token | DEX: $dex
 Buyer: $sender
 <i>Fresh whale entry — watch this token</i>"
-                send_alert "$ALPHA_CHAT" "$msg"
-            done
+				send_alert "$ALPHA_CHAT" "$msg"
+			done
 
-        done
-    fi
+		done
+	fi
 
-    # Deployer events (new token deployments)
-    dep_dir="$chain_dir/deployers"
-    if [ -d "$dep_dir" ]; then
-        find "$dep_dir" -name 'deployments.jsonl' -newermt "@$LAST_RUN" 2>/dev/null | while read -r dep_file; do
-            python3 -c "
+	# Deployer events (new token deployments)
+	dep_dir="$chain_dir/deployers"
+	if [ -d "$dep_dir" ]; then
+		find "$dep_dir" -name 'deployments.jsonl' -newermt "@$LAST_RUN" 2>/dev/null | while read -r dep_file; do
+			python3 -c "
 import json
 count = 0
 with open('$dep_file') as f:
@@ -242,13 +242,13 @@ with open('$dep_file') as f:
 if count >= 5:
     print(f'MASS_DEPLOY|$chain|{count}')
 " | while IFS='|' read -r sig chain count; do
-                msg="🔧 <b>MASS DEPLOYER</b> on $chain
+				msg="🔧 <b>MASS DEPLOYER</b> on $chain
 $count tokens deployed in last 5 min
 <i>Potential serial token launcher — check for rugs</i>"
-                send_alert "$ALPHA_CHAT" "$msg"
-            done
-        done
-    fi
+				send_alert "$ALPHA_CHAT" "$msg"
+			done
+		done
+	fi
 done
 
 echo "$NOW" >"$LAST_RUN_FILE"

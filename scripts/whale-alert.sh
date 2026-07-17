@@ -5,31 +5,31 @@
 
 set -euo pipefail
 
-BOT_TOKEN="${WHALE_ALERT_BOT_TOKEN:-8720275246:AAEfhB51nAkedIUIRZtLHV0i0wxMBgqmins}"
+BOT_TOKEN="${WHALE_ALERT_BOT_TOKEN:?WHALE_ALERT_BOT_TOKEN must be set}"
 CHAT_ID="${WHALE_ALERT_CHAT_ID:--1003818352164}" # CRYPTO_ALERTS channel
 DATA_DIR="${DATA_DIR:-/srv/data/chain-indexer/jsonl}"
 LAST_RUN_FILE="${LAST_RUN_FILE:-/srv/data/chain-indexer/state/whale_alert_last_run}"
 
 # Only process files newer than last run
 if [ -f "$LAST_RUN_FILE" ]; then
-    LAST_RUN=$(cat "$LAST_RUN_FILE")
+	LAST_RUN=$(cat "$LAST_RUN_FILE")
 else
-    LAST_RUN=$(date -u +%s)
+	LAST_RUN=$(date -u +%s)
 fi
 
 NOW=$(date -u +%s)
 ALERTS=0
 
 for chain_dir in "$DATA_DIR"/*/; do
-    chain=$(basename "$chain_dir")
+	chain=$(basename "$chain_dir")
 
-    # Scan DEX events for whale flags
-    dex_dir="$chain_dir/dex"
-    [ -d "$dex_dir" ] || continue
+	# Scan DEX events for whale flags
+	dex_dir="$chain_dir/dex"
+	[ -d "$dex_dir" ] || continue
 
-    # Find files modified since last run
-    find "$dex_dir" -name 'events.jsonl' -newermt "@$LAST_RUN" 2>/dev/null | while read -r file; do
-        python3 -c "
+	# Find files modified since last run
+	find "$dex_dir" -name 'events.jsonl' -newermt "@$LAST_RUN" 2>/dev/null | while read -r file; do
+		python3 -c "
 import json, urllib.request, urllib.parse, sys
 
 with open('$file') as f:
@@ -69,8 +69,8 @@ with open('$file') as f:
         except:
             pass
 "
-        ALERTS=$((ALERTS + 1))
-    done
+		ALERTS=$((ALERTS + 1))
+	done
 done
 
 echo "$NOW" >"$LAST_RUN_FILE"
