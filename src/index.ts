@@ -99,18 +99,31 @@ const runners = chains.map(async (cfg) => {
 
 // ---------------------------------------------------------------------------
 // Periodic R2 sync (every 15 minutes)
+// DISABLED by default: raw NDJSON sync was an uncompressed double-bake with
+// sync-deletes semantics (rclone sync deletes remote files not present
+// locally — torched local = torched "archive"). The compressed, verified,
+// immutable archive pipeline lives in scripts/chain-indexer-guard.sh
+// (r2:backups/chain-indexer/). Set R2_RAW_SYNC=on to re-enable.
 // ---------------------------------------------------------------------------
 
-const syncInterval = setInterval(
-  async () => {
-    try {
-      await syncToR2();
-    } catch (err) {
-      logger.error({ err }, 'R2 sync failed');
-    }
-  },
-  15 * 60 * 1000,
-);
+const rawSyncEnabled = process.env.R2_RAW_SYNC === 'on';
+
+const syncInterval = rawSyncEnabled
+  ? setInterval(
+      async () => {
+        try {
+          await syncToR2();
+        } catch (err) {
+          logger.error({ err }, 'R2 sync failed');
+        }
+      },
+      15 * 60 * 1000,
+    )
+  : null;
+
+if (!rawSyncEnabled) {
+  logger.info('Raw R2 sync disabled (guard.sh owns the archive pipeline)');
+}
 
 // ---------------------------------------------------------------------------
 // Hourly NDJSON → Parquet conversion (auto-starts at next hour, then periodic)
@@ -124,8 +137,12 @@ const parquetInterval = startParquetScheduler();
 
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received — shutting down');
-  clearInterval(syncInterval);
+  if (syncInterval) clearInterval(syncInterval);
   clearInterval(parquetInterval);
+
+  if (!rawSyncEnabled) {
+    process.exit(0);
+  }
 
   // Final sync with 30s timeout (don't hang shutdown on large syncs)
   const timeout = setTimeout(() => {
