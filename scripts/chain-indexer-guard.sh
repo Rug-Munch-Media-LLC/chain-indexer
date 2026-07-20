@@ -32,7 +32,13 @@ done
 rm -rf "$TMPDIR"
 
 # ── 2+3. SHIP to R2 with verification (copy + check) ──
-if command -v rclone >/dev/null; then
+R2_OK=false
+if command -v rclone >/dev/null && rclone lsd r2: >/dev/null 2>&1; then
+  R2_OK=true
+else
+  log "CRITICAL: rclone/r2 unavailable — ship AND cap-delete of .zst suspended this run"
+fi
+if [ "$R2_OK" = true ]; then
   rclone copy "$DATA" "$R2_DEST" --include "*/" --include "*.jsonl.zst" --exclude "*" \
     --s3-upload-cutoff 100M --transfers 8 --log-level ERROR 2>>"$LOG"
   if [ $? -eq 0 ]; then
@@ -58,14 +64,29 @@ fi
 find "$DATA" -name "*.jsonl" -mtime +2 -delete 2>>"$LOG"
 find "$DATA" -type d -empty -delete 2>/dev/null
 
-# ── 6. hard cap ──
+# ── 6. hard cap: raw .jsonl first; .zst ONLY if R2-verified; else ALERT ──
 SIZE=$(dir_mb)
 if [ "$SIZE" -gt "$MAX_DIR_MB" ]; then
-  log "CAP: ${SIZE}MB > ${MAX_DIR_MB}MB — trimming to ${TRIM_TO_MB}MB"
-  find "$DATA" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | cut -d' ' -f2- | while read -r f; do
+  log "CAP: ${SIZE}MB > ${MAX_DIR_MB}MB — trimming raw .jsonl (oldest first)"
+  find "$DATA" -name "*.jsonl" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | cut -d' ' -f2- | while read -r f; do
     [ "$(dir_mb)" -le "$TRIM_TO_MB" ] && break
-    rm -f "$f" && log "cap-trimmed: $f"
+    rm -f "$f" && log "cap-trimmed raw: $f"
   done
+  SIZE=$(dir_mb)
+  if [ "$SIZE" -gt "$MAX_DIR_MB" ]; then
+    if [ "$R2_OK" = true ]; then
+      rclone lsf "$R2_DEST" --recursive --files-only 2>/dev/null | sort > /tmp/r2_manifest_cap.txt
+      find "$DATA" -name "*.jsonl.zst" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | cut -d' ' -f2- | while read -r f; do
+        [ "$(dir_mb)" -le "$TRIM_TO_MB" ] && break
+        rel="${f#$DATA/}"
+        if grep -qxF "$rel" /tmp/r2_manifest_cap.txt; then
+          rm -f "$f" && log "cap-trimmed (R2-verified): $rel"
+        fi
+      done
+    fi
+    SIZE=$(dir_mb)
+    [ "$SIZE" -gt "$MAX_DIR_MB" ] && log "CRITICAL: still ${SIZE}MB over cap — unverified archives PRESERVED, manual action required" && logger -t chain-indexer-guard "CRITICAL: ${SIZE}MB over cap, unverified archives preserved"
+  fi
 fi
 
 log "done: data=$(dir_mb)MB free=$(free_mb)MB"
