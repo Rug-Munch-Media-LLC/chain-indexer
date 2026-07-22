@@ -4,3 +4,13 @@ dist/
 *.jsonl
 state/
 .env
+
+# Added 2026-07-22 — security hardening
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.log
+*.egg-info/
+.DS_Store
+credentials*
