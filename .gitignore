@@ -1,16 +1,67 @@
-node_modules/
-dist/
-*.parquet
-*.jsonl
-state/
-.env
+# === RUGMUNCH STANDARD GITIGNORE — 2026-07-22 ===
 
-# Added 2026-07-22 — security hardening
-__pycache__/
-*.pyc
-*.pyo
-.venv/
-*.log
-*.egg-info/
-.DS_Store
+# Secrets & Credentials — NEVER commit
+*.env
+*.key
+*.pem
+*.p12
+*.pfx
 credentials*
+secrets*
+.env.*
+!.env.example
+!.env.sample
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.egg
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Node
+node_modules/
+.npm/
+.yarn/
+
+# Build
+dist/
+build/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Security reports — stored in R2, not git
+security-reports/
+*.gitleaks.json
+trivy*.json
+
+# Internal docs — company confidential
+*INTERNAL*
+PRIVATE*
+ADMIN-ACCESS*
+EDGE*
+secret-rotation*
+
+# === REPO-SPECIFIC ENTRIES (preserved) ===
+
+*.jsonl
+*.parquet
+*.pyo
+.env
+state/
