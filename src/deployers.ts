@@ -52,12 +52,12 @@ const FACTORIES: Record<string, string[]> = {
     '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32', // Quickswap V2
     '0x1F98431c8aD98523631AE4a59f267346ea31F984', // Uniswap V3
   ],
-  optimism: [
-    '0x1F98431c8aD98523631AE4a59f267346ea31F984', // Uniswap V3
-  ],
-  avalanche: [
-    '0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10', // Trader Joe V2
-  ],
+  // optimism: [
+  //   '0x1F98431c8aD98523631AE4a59f267346ea31F984', // Uniswap V3
+  // ],
+  // avalanche: [
+  //   '0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10', // Trader Joe V2
+  // ],
 };
 
 // ---------------------------------------------------------------------------

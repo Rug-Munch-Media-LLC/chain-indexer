@@ -214,43 +214,43 @@ const REGISTRY: Record<string, Record<string, TokenMeta>> = {
       decimals: 8,
     },
   },
-  optimism: {
-    '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58': {
-      symbol: 'USDT',
-      name: 'Tether USD',
-      decimals: 6,
-    },
-    '0x0b2c639c533813f4aa9d7837caf62653d097ff85': { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
-    '0xda10009cbd5d07dd0cecc66161fc93d7c9000da1': {
-      symbol: 'DAI',
-      name: 'Dai Stablecoin',
-      decimals: 18,
-    },
-    '0x4200000000000000000000000000000000000006': {
-      symbol: 'WETH',
-      name: 'Wrapped Ether',
-      decimals: 18,
-    },
-    '0x4200000000000000000000000000000000000042': { symbol: 'OP', name: 'Optimism', decimals: 18 },
-  },
-  avalanche: {
-    '0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7': {
-      symbol: 'USDT',
-      name: 'Tether USD',
-      decimals: 6,
-    },
-    '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e': { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
-    '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7': {
-      symbol: 'WAVAX',
-      name: 'Wrapped AVAX',
-      decimals: 18,
-    },
-    '0x6e84a6216ea6dacc71ee8e6b0a5b7322eebc0fdd': {
-      symbol: 'JOE',
-      name: 'Trader Joe',
-      decimals: 18,
-    },
-  },
+  // optimism: {
+  //   '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58': {
+  //     symbol: 'USDT',
+  //     name: 'Tether USD',
+  //     decimals: 6,
+  //   },
+  //   '0x0b2c639c533813f4aa9d7837caf62653d097ff85': { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+  //   '0xda10009cbd5d07dd0cecc66161fc93d7c9000da1': {
+  //     symbol: 'DAI',
+  //     name: 'Dai Stablecoin',
+  //     decimals: 18,
+  //   },
+  //   '0x4200000000000000000000000000000000000006': {
+  //     symbol: 'WETH',
+  //     name: 'Wrapped Ether',
+  //     decimals: 18,
+  //   },
+  //   '0x4200000000000000000000000000000000000042': { symbol: 'OP', name: 'Optimism', decimals: 18 },
+  // },
+  // avalanche: {
+  //   '0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7': {
+  //     symbol: 'USDT',
+  //     name: 'Tether USD',
+  //     decimals: 6,
+  //   },
+  //   '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e': { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+  //   '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7': {
+  //     symbol: 'WAVAX',
+  //     name: 'Wrapped AVAX',
+  //     decimals: 18,
+  //   },
+  //   '0x6e84a6216ea6dacc71ee8e6b0a5b7322eebc0fdd': {
+  //     symbol: 'JOE',
+  //     name: 'Trader Joe',
+  //     decimals: 18,
+  //   },
+  // },
   gnosis: {
     '0xe91d153e0b41518a2ce8dd3d7944fa863463a97d': {
       symbol: 'WXDAI',
@@ -303,6 +303,23 @@ const REGISTRY: Record<string, Record<string, TokenMeta>> = {
       decimals: 6,
     },
     '0x471ece3750da237f93b8e339c536989b8978a438': { symbol: 'CELO', name: 'Celo', decimals: 18 },
+  },
+  // ── Solana SPL tokens (mint addresses — base58) ──
+  solana: {
+    'epjfwdd5aufqssemimt4otbu27r4pcf2avjphgvqhnjx': { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+    'es9vmfrzacermjfrf4h2fyd4kconky11mcce8benwnybb': { symbol: 'USDT', name: 'Tether USD', decimals: 6 },
+    'jupyiwryjfskupihha7hker8vutaefosybkedznsdvcn': { symbol: 'JUP', name: 'Jupiter', decimals: 6 },
+    'dezXaz8z7pnrnrjz3wXbor6gixca6xjnb7yab1bpb263': { symbol: 'BONK', name: 'Bonk', decimals: 5 },
+    'ekpqgsjtjmfqkz9kqansqyxrcf8fboplzhyxdm65zcjm': { symbol: 'WIF', name: 'dogwifhat', decimals: 6 },
+    'hz1jovnivvgrniiyveozevgz58xau3rkwx8eacqbct3': { symbol: 'PYTH', name: 'Pyth Network', decimals: 6 },
+    'msolzycxhdygdz16u5gqsh3i5k3z3kzk7ytfqcj7so': { symbol: 'mSOL', name: 'Marinade staked SOL', decimals: 9 },
+    '7dhbwxmci3dt8ufyw726zblxgycu7y3il6trkn1y7arj': { symbol: 'stSOL', name: 'Lido staked SOL', decimals: 9 },
+    '4k3dyjzvzp8emzwuxbbcejvskkk59s5icnly3qrkx6r': { symbol: 'RAY', name: 'Raydium', decimals: 6 },
+    'srmuapvnxdxokk5gt7xd5cuugxmbcoaz2lheuaokwrt': { symbol: 'SRM', name: 'Serum', decimals: 6 },
+    '7xkx2g87wd97txjsdpbd5jbkhteqa83tzrujosgasu': { symbol: 'SAMO', name: 'Samoyed Coin', decimals: 9 },
+    'orcaektdk7lkz57vaayr9qenvspfiu6qemu1kekze': { symbol: 'ORCA', name: 'Orca', decimals: 6 },
+    'atlasxmbpqxbuybxpsv97fae5wk3v8z1ntjdcv9': { symbol: 'ATLAS', name: 'Star Atlas', decimals: 8 },
+    'polishxnrw6obuo1vhiukqzfjgl4xdsu4g9qjz9qvk': { symbol: 'POLIS', name: 'Star Atlas DAO', decimals: 8 },
   },
 };
 

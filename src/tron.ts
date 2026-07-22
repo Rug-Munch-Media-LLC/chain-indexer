@@ -6,7 +6,7 @@
  * Writes to the same NDJSON format as the Subsquid pipeline.
  */
 
-import { mkdirSync, writeFileSync, appendFileSync, existsSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, appendFileSync, existsSync, readFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import pino from 'pino';
 import type { ChainConfig } from './chains.js';
@@ -63,7 +63,7 @@ function saveState(state: TronState) {
   const tmp = join(STATE_DIR, 'tron.tmp');
   const dst = join(STATE_DIR, 'tron.json');
   writeFileSync(tmp, JSON.stringify(state, null, 2));
-  require('node:fs').renameSync(tmp, dst);
+  renameSync(tmp, dst);
 }
 
 // ---------------------------------------------------------------------------

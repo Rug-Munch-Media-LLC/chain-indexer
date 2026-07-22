@@ -97,34 +97,48 @@ export const CHAINS: Record<string, ChainConfig> = {
     confirmations: 19,
   },
 
+  solana: {
+    id: 'solana',
+    name: 'Solana',
+    subsquidNetwork: 'solana-mainnet',
+    rpcPool: [
+      'https://api.mainnet-beta.solana.com',
+      'https://solana.drpc.org',
+      'https://solana-rpc.publicnode.com',
+    ],
+    blockTime: 0.4,
+    confirmations: 32,
+  },
+
   // ── Added: major L2s + alt L1s ──
+  // NOTE: optimism + avalanche removed from ENABLED_CHAINS 2026-07-22 (never catch up)
 
-  optimism: {
-    id: 'optimism',
-    name: 'Optimism',
-    subsquidNetwork: 'optimism-mainnet',
-    rpcPool: [
-      'https://mainnet.optimism.io',
-      'https://optimism.llamarpc.com',
-      'https://optimism.drpc.org',
-      'https://optimism-mainnet.public.blastapi.io',
-    ],
-    blockTime: 2,
-    confirmations: 12,
-  },
+  // optimism: {
+  //   id: 'optimism',
+  //   name: 'Optimism',
+  //   subsquidNetwork: 'optimism-mainnet',
+  //   rpcPool: [
+  //     'https://mainnet.optimism.io',
+  //     'https://optimism.llamarpc.com',
+  //     'https://optimism.drpc.org',
+  //     'https://optimism-mainnet.public.blastapi.io',
+  //   ],
+  //   blockTime: 2,
+  //   confirmations: 12,
+  // },
 
-  avalanche: {
-    id: 'avalanche',
-    name: 'Avalanche C-Chain',
-    subsquidNetwork: 'avalanche-mainnet',
-    rpcPool: [
-      'https://api.avax.network/ext/bc/C/rpc',
-      'https://avalanche.drpc.org',
-      'https://avax.meowrpc.com',
-    ],
-    blockTime: 2,
-    confirmations: 12,
-  },
+  // avalanche: {
+  //   id: 'avalanche',
+  //   name: 'Avalanche C-Chain',
+  //   subsquidNetwork: 'avalanche-mainnet',
+  //   rpcPool: [
+  //     'https://api.avax.network/ext/bc/C/rpc',
+  //     'https://avalanche.drpc.org',
+  //     'https://avax.meowrpc.com',
+  //   ],
+  //   blockTime: 2,
+  //   confirmations: 12,
+  // },
 
   gnosis: {
     id: 'gnosis',
@@ -178,13 +192,14 @@ export const ENABLED_CHAINS: string[] = [
   'arbitrum',
   'base',
   'polygon',
-  'optimism',
-  'avalanche',
-  'gnosis',
-  'fantom',
-  'linea',
-  'celo',
+  // 'optimism',   // DROPPED 2026-07-22: 119d ETA @ 10 blk/s (5.85% progress)
+  // 'avalanche',  // DROPPED 2026-07-22: 92d ETA @ 13 blk/s (5.88% progress)
+  // 'gnosis',     // DROPPED 2026-07-22: stalled, no Subsquid dataset
+  // 'fantom',     // DROPPED 2026-07-22: stalled, no Subsquid dataset
+  // 'linea',      // DROPPED 2026-07-22: stalled, no Subsquid dataset
+  // 'celo',       // DROPPED 2026-07-22: stalled, no Subsquid dataset
   'tron',
+  'solana',
 ];
 
 // ---------------------------------------------------------------------------
@@ -250,20 +265,20 @@ export const DEX_CONFIGS: Record<string, DexContract[]> = {
     },
   ],
 
-  optimism: [
-    {
-      name: 'uniswap_v3',
-      v3Factory: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
-    },
-  ],
+  // optimism: [
+  //   {
+  //     name: 'uniswap_v3',
+  //     v3Factory: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
+  //   },
+  // ],
 
-  avalanche: [
-    {
-      name: 'traderjoe',
-      v2Factory: '0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10',
-      router: '0x60aE616a2155Ee3d9A68541Ba4544862310933d4',
-    },
-  ],
+  // avalanche: [
+  //   {
+  //     name: 'traderjoe',
+  //     v2Factory: '0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10',
+  //     router: '0x60aE616a2155Ee3d9A68541Ba4544862310933d4',
+  //   },
+  // ],
 };
 
 export const DATA_DIR = process.env.DATA_DIR || '/srv/data/chain-indexer/jsonl';

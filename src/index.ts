@@ -19,6 +19,7 @@ import { ingestEvmChain } from './subsquid.js';
 import { ingestDexChain } from './dex.js';
 import { ingestDeployers } from './deployers.js';
 import { ingestTron } from './tron.js';
+import { ingestSolana } from './solana.js';
 import { syncToR2 } from './sync.js';
 import { startParquetScheduler } from './parquet.js';
 
@@ -83,6 +84,9 @@ const runners = chains.map(async (cfg) => {
         // Tron: poll-based, runs a batch then sleeps
         await ingestTron(cfg);
         await new Promise((r) => setTimeout(r, cfg.blockTime * 1000 * 20)); // sleep ~1 min
+      } else if (cfg.id === 'solana') {
+        // Solana: Subsquid-based SPL token stream (long-running, auto-resumes)
+        await ingestSolana();
       } else if (cfg.subsquidNetwork) {
         // EVM: Subsquid stream (long-running, auto-resumes on error)
         // Run ERC-20 + DEX + deployer tracking concurrently per chain

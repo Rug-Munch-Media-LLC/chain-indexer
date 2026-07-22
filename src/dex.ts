@@ -177,8 +177,8 @@ const WHALE_THRESHOLDS: Record<string, bigint> = {
   polygon: BigInt('50000000000000000000000'), // 50K MATIC
   arbitrum: BigInt('10000000000000000000'), // 10 ETH
   base: BigInt('10000000000000000000'), // 10 ETH
-  optimism: BigInt('10000000000000000000'), // 10 ETH
-  avalanche: BigInt('500000000000000000000'), // 500 AVAX
+  // optimism: BigInt('10000000000000000000'), // 10 ETH
+  // avalanche: BigInt('500000000000000000000'), // 500 AVAX
   gnosis: BigInt('50000000000000000000'), // 50 xDAI
   fantom: BigInt('500000000000000000000'), // 500 FTM
   linea: BigInt('10000000000000000000'), // 10 ETH
