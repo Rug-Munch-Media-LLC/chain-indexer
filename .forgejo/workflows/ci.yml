@@ -16,6 +16,16 @@ jobs:
           which lefthook || curl -1sLf 'https://github.com/evilmartians/lefthook/releases/download/v1.7.18/lefthook_1.7.18_linux_amd64.tar.gz' | tar xz -C /usr/local/bin
           lefthook run pre-commit
 
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npx tsc --noEmit
+
   security:
     runs-on: ubuntu-latest
     steps:
@@ -24,5 +34,5 @@ jobs:
           fetch-depth: 0
       - name: Gitleaks scan
         run: |
-          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz | tar xz -C /usr/local/bin
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.0/gitleaks_8.24.0_linux_x64.tar.gz | tar xz -C /usr/local/bin
           gitleaks detect --source . --verbose
