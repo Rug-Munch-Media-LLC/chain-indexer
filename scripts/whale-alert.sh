@@ -7,8 +7,8 @@ set -euo pipefail
 
 BOT_TOKEN="${WHALE_ALERT_BOT_TOKEN:?WHALE_ALERT_BOT_TOKEN must be set}"
 CHAT_ID="${WHALE_ALERT_CHAT_ID:--1003818352164}" # CRYPTO_ALERTS channel
-DATA_DIR="${DATA_DIR:-/srv/data/chain-indexer/jsonl}"
-LAST_RUN_FILE="${LAST_RUN_FILE:-/srv/data/chain-indexer/state/whale_alert_last_run}"
+DATA_DIR="${DATA_DIR:-/path/to/data/chain-indexer/jsonl}"
+LAST_RUN_FILE="${LAST_RUN_FILE:-/path/to/data/chain-indexer/state/whale_alert_last_run}"
 
 # Only process files newer than last run
 if [ -f "$LAST_RUN_FILE" ]; then

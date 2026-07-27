@@ -9,7 +9,7 @@ set -euo pipefail
 
 REPO_DIR="/srv/work/repos/chain-indexer"
 DEPLOY_DIR="$REPO_DIR/deploy"
-DATA_DIR="/srv/data/chain-indexer/jsonl"
+DATA_DIR="/path/to/data/chain-indexer/jsonl"
 STATE_DIR="/srv/data/chain-indexer/state"
 ENV_FILE="$REPO_DIR/.env"
 ENV_EXAMPLE="$DEPLOY_DIR/.env.example"

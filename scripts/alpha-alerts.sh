@@ -8,8 +8,8 @@ set -euo pipefail
 BOT_TOKEN="${ALERT_BOT_TOKEN:?ALERT_BOT_TOKEN must be set}"
 ALERTS_CHAT="${ALERTS_CHAT:--1003818352164}" # CRYPTO_ALERTS
 ALPHA_CHAT="${ALPHA_CHAT:--1003762675055}"   # CRYPTO_ALPHA
-DATA_DIR="${DATA_DIR:-/srv/data/chain-indexer/jsonl}"
-STATE_DIR="${STATE_DIR:-/srv/data/chain-indexer/state}"
+DATA_DIR="${DATA_DIR:-/path/to/data/chain-indexer/jsonl}"
+STATE_DIR="${STATE_DIR:-/path/to/data/chain-indexer/state}"
 LAST_RUN_FILE="$STATE_DIR/alpha_alert_last_run"
 
 # Channel routing: urgent → ALERTS, alpha → ALPHA
