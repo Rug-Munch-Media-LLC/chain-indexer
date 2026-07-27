@@ -3,7 +3,7 @@
 # chain-indexer — deployment setup script
 #
 # Run on Talos:
-#   ssh netcup "bash /srv/work/repos/chain-indexer/deploy/setup.sh"
+#   On the deploy host: bash /srv/chain-indexer/deploy/setup.sh
 #
 set -euo pipefail
 

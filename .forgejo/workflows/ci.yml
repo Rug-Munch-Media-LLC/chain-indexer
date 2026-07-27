@@ -1,5 +1,4 @@
 # ── Forgejo Actions CI — chain-indexer ────────────────────────
-# Enhanced 2026-07-27: added commitlint, semgrep, gitleaks config, build check
 name: CI
 
 on:
@@ -11,13 +10,17 @@ on:
 jobs:
   # ── Commit check ─────────────────────────────────────────────
   commitlint:
-    runs-on: ubuntu-latest
+    runs-on: docker-x64
+    container:
+      image: node:22-bookworm-slim
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install commitlint
         run: |
+          apt-get update && apt-get install -y --no-install-recommends git ca-certificates
+          rm -rf /var/lib/apt/lists/*
           npm install -g @commitlint/cli @commitlint/config-conventional
       - name: Validate all commits in PR
         run: |
@@ -31,51 +34,63 @@ jobs:
 
   # ── Lint + typecheck ─────────────────────────────────────────
   lint:
-    runs-on: ubuntu-latest
+    runs-on: docker-x64
+    container:
+      image: node:22-bookworm-slim
     steps:
       - uses: actions/checkout@v4
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm ci
+      - name: Install deps
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends git ca-certificates
+          rm -rf /var/lib/apt/lists/*
+          npm ci --no-audit --no-fund
       - name: TypeScript check
         run: npx tsc --noEmit
 
   # ── Security ─────────────────────────────────────────────────
   security:
-    runs-on: ubuntu-latest
+    runs-on: docker-x64
+    container:
+      image: python:3.11-slim
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Gitleaks scan
         run: |
+          apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+          rm -rf /var/lib/apt/lists/*
           curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.0/gitleaks_8.24.0_linux_x64.tar.gz | tar xz -C /usr/local/bin
           gitleaks detect --source . --verbose --config .gitleaks.toml
 
   # ── Semgrep SAST ─────────────────────────────────────────────
   semgrep:
-    runs-on: ubuntu-latest
+    runs-on: docker-x64
+    container:
+      image: python:3.12-slim
     steps:
       - uses: actions/checkout@v4
-      - name: Semgrep SAST
-        uses: semgrep/semgrep-action@v1
-        with:
-          config: auto
-          auditOn: push
+      - name: Install semgrep
+        run: pip install semgrep
+      - name: Semgrep SAST scan
+        run: |
+          semgrep --config=auto --error --severity=ERROR \
+            --exclude='node_modules/' --exclude='.venv/' \
+            .
         continue-on-error: true
 
   # ── Build check ──────────────────────────────────────────────
   build:
-    runs-on: ubuntu-latest
+    runs-on: docker-x64
+    container:
+      image: node:22-bookworm-slim
     needs: [lint]
     steps:
       - uses: actions/checkout@v4
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm ci
+      - name: Install deps
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends git ca-certificates
+          rm -rf /var/lib/apt/lists/*
+          npm ci --no-audit --no-fund
       - name: Build
         run: npx tsc --noEmit
