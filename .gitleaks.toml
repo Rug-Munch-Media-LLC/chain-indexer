@@ -82,15 +82,12 @@ paths = [
   '''\.ruff_cache/''',
   '''\.mypy_cache/''',
   '''vendor/''',
-  '''scripts/''',
-  '''AGENTS\.md''',
+]
+
+regexTarget = "line"
+regexes = [
+  # Gopass documentation references (instructions, not actual secrets)
+  '''gopass\s+(?:show|generate)\s+rmi/''',
 ]
 
 # Stopwords (false-positive patterns to ignore)
-stopwords = [
-  "example-api-key",
-  "test-private-key",
-  "placeholder-secret",
-  "your-api-key-here",
-  "TODO: add real key",
-]
