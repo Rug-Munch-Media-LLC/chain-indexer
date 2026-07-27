@@ -1,0 +1,28 @@
+# ── lefthook.yml — fast git hooks ──
+# Source of truth: standards/templates/lefthook-base.yml
+# Variant: python (simplified)
+# Install: lefthook install
+
+pre-commit:
+  parallel: true
+  commands:
+    no-env-files:
+      run: |
+        if find . -maxdepth 3 -name '.env' -not -name '.env.example' -not -path './.git/*' -not -path './node_modules/*' | grep -q .; then
+          echo "ERROR: .env files found. Move secrets to gopass (gopass show ...). See AGENTS.md hard-rule 6."
+          find . -maxdepth 3 -name '.env' -not -name '.env.example' -not -path './.git/*' -not -path './node_modules/*'
+          exit 1
+        fi
+      skip:
+        - merge
+        - rebase
+    gitleaks:
+      run: gitleaks protect --staged --no-banner --verbose
+    biome:
+      glob: "*.{ts,js,json}"
+      run: npx biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+commit-msg:
+  commands:
+    commitlint:
+      run: commitlint --edit "$1"
