@@ -27,20 +27,19 @@ const logger = pino({ name: "solana" });
 // ClickHouse client (lazy init)
 // ---------------------------------------------------------------------------
 
-const CLICKHOUSE_URL =
-	process.env.CLICKHOUSE_URL ||
-	"http://rmi:REDACTED@localhost:8123";
+const CLICKHOUSE_URL = process.env.CLICKHOUSE_URL || "http://localhost:8123";
+const CLICKHOUSE_USER = process.env.CLICKHOUSE_USER || "rmi";
+const CLICKHOUSE_PASSWORD = process.env.CLICKHOUSE_PASSWORD || "";
 const CLICKHOUSE_DB = process.env.CLICKHOUSE_DATABASE || "wallet_memory";
 
 let chClient: ReturnType<typeof createClient> | null = null;
 
 function getClickHouseClient() {
 	if (!chClient) {
-		const url = new URL(CLICKHOUSE_URL);
 		chClient = createClient({
-			host: `${url.protocol}//${url.host}`,
-			username: decodeURIComponent(url.username),
-			password: decodeURIComponent(url.password),
+			host: CLICKHOUSE_URL,
+			username: CLICKHOUSE_USER,
+			password: CLICKHOUSE_PASSWORD,
 			database: CLICKHOUSE_DB,
 			clickhouse_settings: {
 				async_insert: 1,
