@@ -9,7 +9,6 @@ import {
 	existsSync,
 	mkdirSync,
 	readFileSync,
-	renameSync,
 	writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
@@ -218,7 +217,7 @@ export async function ingestDeployers(cfg: ChainConfig): Promise<void> {
 			(FACTORIES[cfg.id] ?? []).map((f) => f.toLowerCase()),
 		);
 		let lastLoggedBlock = state.lastBlock;
-		const pendingDeployer: {
+		const _pendingDeployer: {
 			txHash: string;
 			deployer: string;
 			block: number;

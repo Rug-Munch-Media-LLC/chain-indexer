@@ -211,7 +211,7 @@ function isWhale(value: bigint, chain: string): boolean {
 /** Build a reverse map: contractAddress -> dexName for known DEX routers/factories */
 function buildContractToDexMap(): Map<string, string> {
 	const map = new Map<string, string>();
-	for (const [chain, dexes] of Object.entries(DEX_CONFIGS)) {
+	for (const [, dexes] of Object.entries(DEX_CONFIGS)) {
 		for (const d of dexes) {
 			if (d.router) map.set(d.router.toLowerCase(), d.name);
 			if (d.v2Factory) map.set(d.v2Factory.toLowerCase(), d.name);
@@ -225,7 +225,7 @@ let _contractToDex: Map<string, string> | null = null;
 function resolveDex(
 	contractAddress: string,
 	version: "v2" | "v3",
-	chain: string,
+	_chain: string,
 ): string {
 	if (!_contractToDex) _contractToDex = buildContractToDexMap();
 
