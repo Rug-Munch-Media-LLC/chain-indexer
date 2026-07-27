@@ -69,7 +69,7 @@ tags = ["rmi", "critical"]
 # ─── ALLOWLIST ──────────────────────────────────────────────────────────────
 
 [allowlist]
-description = "Global allowlist — applies to all repos"
+description = "Build artifacts + specific known false positives (no blanket directory excludes)"
 paths = [
   '''node_modules/''',
   '''\.git/''',
@@ -89,5 +89,3 @@ regexes = [
   # Gopass documentation references (instructions, not actual secrets)
   '''gopass\s+(?:show|generate)\s+rmi/''',
 ]
-
-# Stopwords (false-positive patterns to ignore)
