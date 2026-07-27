@@ -1,27 +1,22 @@
 # ── chain-indexer Dockerfile ────────────────────────────────────────────
 # Rug Munch Media fleet standard
-# Multi-stage: production image for blockchain data ingestion
+# Single-stage: includes pre-installed node_modules (dev deps too)
 # ──────────────────────────────────────────────────────────────────────────
-
-FROM node:22-slim AS builder
-
-WORKDIR /app
-COPY package.json package-lock.json ./
-# Install ALL deps (tsx is a devDependency, needed at runtime for loader)
-RUN npm install --ignore-scripts
-
-# ── Runtime image ───────────────────────────────────────────────────────
 
 FROM node:22-slim
 
 WORKDIR /app
 
-COPY --from=builder /app/node_modules ./node_modules
+COPY package.json package-lock.json ./
+ADD node_modules.tar.gz /app/
+
 COPY tsconfig.json ./
 COPY src/ ./src/
 
 VOLUME ["/data"]
 
 ENV NODE_ENV=production
+
+USER node
 
 ENTRYPOINT ["node", "--import", "tsx", "src/index.ts"]

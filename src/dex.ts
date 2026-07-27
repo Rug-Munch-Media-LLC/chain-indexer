@@ -17,6 +17,11 @@ import { join } from "node:path";
 import pino from "pino";
 import type { ChainConfig } from "./chains.js";
 import { DATA_DIR, DEX_CONFIGS, STATE_DIR } from "./chains.js";
+import {
+	ensureClickHouseTables,
+	getClickHouseClient,
+	toIsoTs,
+} from "./clickhouse.js";
 
 const logger = pino({ name: "dex" });
 
@@ -240,6 +245,7 @@ function resolveDex(
 function writeDexBatch(chainId: string, events: DexEvent[]) {
 	if (events.length === 0) return;
 
+	// ── NDJSON output (existing) ──
 	const now = new Date();
 	const yyyy = now.getUTCFullYear();
 	const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
@@ -250,6 +256,65 @@ function writeDexBatch(chainId: string, events: DexEvent[]) {
 
 	const lines = events.map((e) => JSON.stringify(e)).join("\n") + "\n";
 	appendFileSync(file, lines);
+
+	// ── ClickHouse output (new) ──
+	writeDexBatchClickHouse(chainId, events).catch((err) => {
+		logger.error(
+			{ chain: chainId, err },
+			"ClickHouse dex_events batch write failed",
+		);
+	});
+}
+
+// ---------------------------------------------------------------------------
+// ClickHouse writer — dex_events
+// ---------------------------------------------------------------------------
+
+async function writeDexBatchClickHouse(chainId: string, events: DexEvent[]) {
+	if (events.length === 0) return;
+	const client = getClickHouseClient();
+
+	const now = new Date();
+	const values = events.map((e) => ({
+		type: e.type,
+		chain: chainId,
+		block_number: e.blockNumber,
+		block_timestamp: toIsoTs(e.blockTimestamp),
+		tx_hash: e.txHash,
+		log_index: e.logIndex,
+		contract_address: e.contractAddress,
+		dex: e.dex,
+		version: e.version,
+		token0: e.token0 ?? "",
+		token1: e.token1 ?? "",
+		sender: e.sender ?? "",
+		recipient: e.recipient ?? "",
+		amount0_in: e.amount0In ?? null,
+		amount1_in: e.amount1In ?? null,
+		amount0_out: e.amount0Out ?? null,
+		amount1_out: e.amount1Out ?? null,
+		amount0: e.amount0 ?? null,
+		amount1: e.amount1 ?? null,
+		whale: e.whale ? 1 : 0,
+		ingested_at: now.toISOString(),
+	}));
+
+	try {
+		await client.insert({
+			table: "dex_events",
+			values,
+			format: "JSONEachRow",
+		});
+		logger.debug(
+			{ chain: chainId, count: values.length },
+			"ClickHouse dex_events inserted",
+		);
+	} catch (err) {
+		logger.error(
+			{ err, chain: chainId, count: values.length },
+			"ClickHouse dex_events insert failed",
+		);
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -293,6 +358,9 @@ export async function ingestDexChain(cfg: ChainConfig): Promise<void> {
 		);
 		return;
 	}
+
+	// Ensure ClickHouse tables exist (idempotent — runs once per process)
+	await ensureClickHouseTables();
 
 	const state = loadDexState(cfg.id);
 	const { evmPortalSource, evmDecoder } = await import("@subsquid/pipes/evm");

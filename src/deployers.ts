@@ -16,6 +16,11 @@ import { join } from "node:path";
 import pino from "pino";
 import type { ChainConfig } from "./chains.js";
 import { DATA_DIR, STATE_DIR } from "./chains.js";
+import {
+	ensureClickHouseTables,
+	getClickHouseClient,
+	toIsoTs,
+} from "./clickhouse.js";
 
 const logger = pino({ name: "deployers" });
 
@@ -99,6 +104,7 @@ function saveState(chainId: string, state: DeployerState) {
 function writeDeployments(chainId: string, deployments: Deployment[]) {
 	if (deployments.length === 0) return;
 
+	// ── NDJSON output (existing) ──
 	const now = new Date();
 	const yyyy = now.getUTCFullYear();
 	const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
@@ -109,6 +115,56 @@ function writeDeployments(chainId: string, deployments: Deployment[]) {
 
 	const lines = deployments.map((e) => JSON.stringify(e)).join("\n") + "\n";
 	appendFileSync(file, lines);
+
+	// ── ClickHouse output (new) ──
+	writeDeploymentsClickHouse(chainId, deployments).catch((err) => {
+		logger.error(
+			{ chain: chainId, err },
+			"ClickHouse deployer_events batch write failed",
+		);
+	});
+}
+
+// ---------------------------------------------------------------------------
+// ClickHouse writer — deployer_events
+// ---------------------------------------------------------------------------
+
+async function writeDeploymentsClickHouse(
+	chainId: string,
+	deployments: Deployment[],
+) {
+	if (deployments.length === 0) return;
+	const client = getClickHouseClient();
+
+	const now = new Date();
+	const values = deployments.map((e) => ({
+		deployer: e.deployer,
+		token_address: e.tokenAddress,
+		chain: chainId,
+		block_number: e.blockNumber,
+		block_timestamp: toIsoTs(e.blockTimestamp),
+		tx_hash: e.txHash,
+		type: e.type,
+		factory: e.factory ?? null,
+		ingested_at: now.toISOString(),
+	}));
+
+	try {
+		await client.insert({
+			table: "deployer_events",
+			values,
+			format: "JSONEachRow",
+		});
+		logger.debug(
+			{ chain: chainId, count: values.length },
+			"ClickHouse deployer_events inserted",
+		);
+	} catch (err) {
+		logger.error(
+			{ err, chain: chainId, count: values.length },
+			"ClickHouse deployer_events insert failed",
+		);
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -135,6 +191,9 @@ export async function ingestDeployers(cfg: ChainConfig): Promise<void> {
 		);
 		return;
 	}
+
+	// Ensure ClickHouse tables exist (idempotent — runs once per process)
+	await ensureClickHouseTables();
 
 	logger.info({ chain: cfg.id }, "Starting deployer tracking");
 

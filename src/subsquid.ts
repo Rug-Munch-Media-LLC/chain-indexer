@@ -15,6 +15,11 @@ import { join } from "node:path";
 import pino from "pino";
 import type { ChainConfig } from "./chains.js";
 import { DATA_DIR, STATE_DIR } from "./chains.js";
+import {
+	ensureClickHouseTables,
+	getClickHouseClient,
+	toIsoTs,
+} from "./clickhouse.js";
 import { resolveToken } from "./metadata.js";
 
 const logger = pino({ name: "subsquid" });
@@ -84,6 +89,7 @@ function writeBatch(chainId: string, events: ERC20Transfer[]) {
 		};
 	});
 
+	// ── NDJSON output (existing) ──
 	const now = new Date();
 	const yyyy = now.getUTCFullYear();
 	const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
@@ -94,6 +100,56 @@ function writeBatch(chainId: string, events: ERC20Transfer[]) {
 
 	const lines = enriched.map((e) => JSON.stringify(e)).join("\n") + "\n";
 	appendFileSync(file, lines);
+
+	// ── ClickHouse output (new) ──
+	writeBatchClickHouse(chainId, enriched).catch((err) => {
+		logger.error(
+			{ chain: chainId, err },
+			"ClickHouse evm_transfers batch write failed",
+		);
+	});
+}
+
+// ---------------------------------------------------------------------------
+// ClickHouse writer — evm_transfers
+// ---------------------------------------------------------------------------
+
+async function writeBatchClickHouse(chainId: string, events: ERC20Transfer[]) {
+	if (events.length === 0) return;
+	const client = getClickHouseClient();
+
+	const now = new Date();
+	const values = events.map((e) => ({
+		chain: chainId,
+		block_number: e.blockNumber,
+		tx_hash: e.txHash,
+		from_address: e.from,
+		to_address: e.to,
+		token_address: e.tokenAddress,
+		value: e.value,
+		block_timestamp: toIsoTs(e.blockTimestamp),
+		log_index: e.logIndex,
+		token_symbol: e.tokenSymbol,
+		token_name: e.tokenName,
+		ingested_at: now.toISOString(),
+	}));
+
+	try {
+		await client.insert({
+			table: "evm_transfers",
+			values,
+			format: "JSONEachRow",
+		});
+		logger.debug(
+			{ chain: chainId, count: values.length },
+			"ClickHouse evm_transfers inserted",
+		);
+	} catch (err) {
+		logger.error(
+			{ err, chain: chainId, count: values.length },
+			"ClickHouse evm_transfers insert failed",
+		);
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -110,6 +166,9 @@ export async function ingestEvmChain(cfg: ChainConfig): Promise<void> {
 		);
 		return;
 	}
+
+	// Ensure ClickHouse tables exist (idempotent — runs once per process)
+	await ensureClickHouseTables();
 
 	logger.info(
 		{ chain: cfg.id, network: cfg.subsquidNetwork, fromBlock: state.lastBlock },
