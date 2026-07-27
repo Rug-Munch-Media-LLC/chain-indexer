@@ -82,6 +82,7 @@ paths = [
   '''\.ruff_cache/''',
   '''\.mypy_cache/''',
   '''vendor/''',
+  '''scripts/''',
 ]
 
 regexTarget = "line"
