@@ -152,7 +152,7 @@ This means:
 
 | Service | Purpose | Auth | Rate Limit |
 |---------|---------|------|------------|
-| **Helius RPC** | Read parsed transactions, getSignaturesForAddress | API key (in gopass) | Tiered, ~100 req/s on paid plan |
+| **Helius RPC** | Read parsed transactions, getSignaturesForAddress | API key (in secrets manager) | Tiered, ~100 req/s on paid plan |
 | **Helius Webhooks** | Push real-time transaction data | API key | Unlimited pushes, configurable filters |
 | **Helius Enhanced Transactions** | Bulk historical backfill with enriched parsing | API key | 100 txns/req, batched |
 | **Jupiter Quote API** | Swap event data, token prices | None | 60 req/min free |
@@ -963,7 +963,7 @@ No new system dependencies. No new Docker services. No database changes.
 
 ```bash
 # Helius
-HELIUS_API_KEY=         # from gopass
+HELIUS_API_KEY=         # from secrets manager
 HELIUS_RPC_URL=https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}
 
 # Optional: Helius Webhook
