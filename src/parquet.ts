@@ -17,7 +17,7 @@ import { jsonlToParquetCommand } from "./sync.js";
 const logger = pino({ name: "parquet" });
 
 const PARQUET_DIR =
-	process.env.PARQUET_DIR || "/srv/data/chain-indexer/parquet";
+	process.env.PARQUET_DIR || "/path/to/data/chain-indexer/parquet";
 const R2_BUCKET = process.env.R2_BUCKET || "rmi-data";
 
 // ---------------------------------------------------------------------------

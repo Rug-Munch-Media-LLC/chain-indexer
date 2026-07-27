@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-DATA_DIR="${DATA_DIR:-/srv/data/chain-indexer/jsonl}"
+DATA_DIR="${DATA_DIR:-/path/to/data/chain-indexer/jsonl}"
 CH_HOST="${CLICKHOUSE_HOST:-rmi-clickhouse}"
 CH_PORT="${CLICKHOUSE_PORT:-9000}"
 

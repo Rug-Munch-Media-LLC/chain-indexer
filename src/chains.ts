@@ -285,6 +285,6 @@ export const DEX_CONFIGS: Record<string, DexContract[]> = {
 	// ],
 };
 
-export const DATA_DIR = process.env.DATA_DIR || "/srv/data/chain-indexer/jsonl";
+export const DATA_DIR = process.env.DATA_DIR || "/path/to/data/chain-indexer/jsonl";
 export const STATE_DIR =
-	process.env.STATE_DIR || "/srv/data/chain-indexer/state";
+	process.env.STATE_DIR || "/path/to/data/chain-indexer/state";

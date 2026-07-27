@@ -6,7 +6,7 @@
 # 6 backups/day, 6 torches/day, permanent archives in R2 (r2:backups/chain-indexer/).
 
 set -u
-DATA=/srv/data/chain-indexer
+DATA=/path/to/data/chain-indexer
 R2_DEST=r2:backups/chain-indexer
 LOG=/var/log/chain-indexer-guard.log
 MAX_DIR_MB=12288       # 12G hard cap
