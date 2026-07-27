@@ -49,7 +49,7 @@ export function getClickHouseClient() {
 // DDL — run once at startup (idempotent)
 // ---------------------------------------------------------------------------
 
-const DDL_STATEMENTS: string[] = [
+export const DDL_STATEMENTS: string[] = [
 	// EVM ERC-20 transfers (written by subsquid.ts)
 	`CREATE TABLE IF NOT EXISTS ${CLICKHOUSE_DB}.evm_transfers (
     chain          String,
