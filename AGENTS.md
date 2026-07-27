@@ -14,7 +14,7 @@ patterns — it is NOT the complete RugMunch production indexing infrastructure.
 The managed platform at rugmunch.io includes proprietary data pipelines and
 operational tooling.
 
-See [METHODOLOGY-PROTECTION.md](https://github.com/RugMunchMedia/standards/blob/main/METHODOLOGY-PROTECTION.md)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for our methodology approach.
 for details on what information belongs in public vs private repos.
 
 ## Commands
