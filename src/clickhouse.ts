@@ -139,10 +139,28 @@ export async function ensureClickHouseTables(): Promise<void> {
 /**
  * Convert a Subsquid timestamp (Unix seconds, possibly as string | number | Date)
  * to an ISO-8601 string.  Returns empty string for falsy/NaN inputs.
+ *
+ * Handles:
+ * - Date objects (common in Subsquid pipes)
+ * - Unix timestamps in seconds (number | numeric string)
+ * - ISO-8601 strings
+ * - Other parseable date strings
  */
 export function toIsoTs(ts: unknown): string {
 	if (!ts) return "";
+	// Handle Date objects from Subsquid pipes directly
+	if (ts instanceof Date && !isNaN(ts.getTime())) {
+		return ts.toISOString();
+	}
+	// Handle numeric timestamps (Unix seconds)
 	const n = Number(ts);
-	if (isNaN(n) || n <= 0) return String(ts);
-	return new Date(n * 1000).toISOString();
+	if (!isNaN(n) && n > 0) {
+		return new Date(n * 1000).toISOString();
+	}
+	// Handle ISO strings or other parseable date strings
+	const d = new Date(ts as string);
+	if (!isNaN(d.getTime())) {
+		return d.toISOString();
+	}
+	return "";
 }
