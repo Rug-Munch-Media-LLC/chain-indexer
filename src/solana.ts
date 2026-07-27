@@ -43,8 +43,8 @@ function getClickHouseClient() {
 			password: decodeURIComponent(url.password),
 			database: CLICKHOUSE_DB,
 			clickhouse_settings: {
-				async_insert: "1",
-				wait_for_async_insert: "0",
+				async_insert: 1,
+				wait_for_async_insert: 0,
 			},
 		});
 		logger.info("ClickHouse client initialized");
