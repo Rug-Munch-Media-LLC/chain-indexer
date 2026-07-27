@@ -62,3 +62,5 @@ RADICLE.md
 coverage/
 htmlcov/
 
+.npmrc
+node_modules.tar.gz
