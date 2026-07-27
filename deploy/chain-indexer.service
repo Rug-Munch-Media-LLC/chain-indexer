@@ -6,13 +6,14 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/srv/work/repos/chain-indexer
+WorkingDirectory=/opt/chain-indexer
 Environment=NODE_ENV=production
-Environment=DATA_DIR=/srv/data/chain-indexer/jsonl
-Environment=STATE_DIR=/srv/data/chain-indexer/state
-EnvironmentFile=/srv/work/repos/chain-indexer/.env
+Environment=DATA_DIR=/var/lib/chain-indexer/jsonl
+Environment=STATE_DIR=/var/lib/chain-indexer/state
+Environment=CLICKHOUSE_DATABASE=wallet_memory
+EnvironmentFile=/opt/chain-indexer/.env
 
-ExecStart=/usr/bin/node --import tsx /srv/work/repos/chain-indexer/src/index.ts
+ExecStart=/usr/bin/node --import tsx /opt/chain-indexer/src/index.ts
 Restart=always
 RestartSec=10
 LimitNOFILE=65536

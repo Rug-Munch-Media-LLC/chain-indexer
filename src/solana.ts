@@ -1,6 +1,7 @@
 /**
  * Subsquid-based Solana SPL token ingestion via Pipes SDK.
- * Streams token balance changes from the Token program → writes NDJSON batches to disk.
+ * Streams token balance changes from the Token program → writes NDJSON batches to disk
+ * and inserts into ClickHouse for real-time querying.
  *
  * Tracks the Solana Token program (TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA)
  * by capturing pre/post token balance deltas per account per transaction.
@@ -15,11 +16,41 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { createClient } from "@clickhouse/client";
 import pino from "pino";
 import { DATA_DIR, STATE_DIR } from "./chains.js";
 import { resolveToken } from "./metadata.js";
 
 const logger = pino({ name: "solana" });
+
+// ---------------------------------------------------------------------------
+// ClickHouse client (lazy init)
+// ---------------------------------------------------------------------------
+
+const CLICKHOUSE_URL =
+	process.env.CLICKHOUSE_URL ||
+	"http://rmi:REDACTED@localhost:8123";
+const CLICKHOUSE_DB = process.env.CLICKHOUSE_DATABASE || "wallet_memory";
+
+let chClient: ReturnType<typeof createClient> | null = null;
+
+function getClickHouseClient() {
+	if (!chClient) {
+		const url = new URL(CLICKHOUSE_URL);
+		chClient = createClient({
+			host: `${url.protocol}//${url.host}`,
+			username: decodeURIComponent(url.username),
+			password: decodeURIComponent(url.password),
+			database: CLICKHOUSE_DB,
+			clickhouse_settings: {
+				async_insert: "1",
+				wait_for_async_insert: "0",
+			},
+		});
+		logger.info("ClickHouse client initialized");
+	}
+	return chClient;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -96,6 +127,47 @@ function writeBatch(events: SPLTransfer[]) {
 
 	const lines = enriched.map((e) => JSON.stringify(e)).join("\n") + "\n";
 	appendFileSync(file, lines);
+
+	// Also write to ClickHouse
+	writeBatchClickHouse(enriched).catch((err) => {
+		logger.error({ err }, "ClickHouse batch write failed");
+	});
+}
+
+// ---------------------------------------------------------------------------
+// ClickHouse writer
+// ---------------------------------------------------------------------------
+
+async function writeBatchClickHouse(events: SPLTransfer[]) {
+	if (events.length === 0) return;
+	const client = getClickHouseClient();
+
+	const now = new Date();
+	const values = events.map((e) => ({
+		slot: e.slot,
+		block_timestamp: e.blockTimestamp,
+		tx_hash: e.txHash,
+		token_account: e.tokenAccount,
+		mint: e.mint,
+		pre_amount: e.preAmount,
+		post_amount: e.postAmount,
+		delta: e.delta,
+		decimals: e.decimals,
+		token_symbol: e.tokenSymbol,
+		token_name: e.tokenName,
+		ingested_at: now.toISOString(),
+	}));
+
+	try {
+		await client.insert({
+			table: "solana_spl_balance_changes",
+			values,
+			format: "JSONEachRow",
+		});
+		logger.debug({ count: values.length }, "ClickHouse batch inserted");
+	} catch (err) {
+		logger.error({ err, count: values.length }, "ClickHouse insert failed");
+	}
 }
 
 // ---------------------------------------------------------------------------
