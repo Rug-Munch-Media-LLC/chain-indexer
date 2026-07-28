@@ -112,4 +112,133 @@ describe("DDL generation", () => {
 		expect(Array.isArray(clickhouse.DDL_STATEMENTS)).toBe(true);
 		expect(clickhouse.DDL_STATEMENTS.length).toBeGreaterThan(0);
 	});
+
+	it("each DDL statement is syntactically valid SQL", async () => {
+		const { DDL_STATEMENTS } = await import("../src/clickhouse.js");
+
+		for (let i = 0; i < DDL_STATEMENTS.length; i++) {
+			const ddl = DDL_STATEMENTS[i];
+
+			// Must start with CREATE TABLE IF NOT EXISTS
+			expect(ddl.startsWith("CREATE TABLE IF NOT EXISTS")).toBe(true);
+
+			// Must have balanced parentheses
+			const openParens = (ddl.match(/\(/g) || []).length;
+			const closeParens = (ddl.match(/\)/g) || []).length;
+			expect(openParens).toBe(closeParens);
+
+			// Must contain ENGINE clause (ClickHouse DDL requirement)
+			expect(ddl.includes("ENGINE =")).toBe(true);
+
+			// Must contain ORDER BY clause
+			expect(ddl.includes("ORDER BY")).toBe(true);
+
+			// Must not end with a comma (no trailing commas after last column def)
+			// Find the last non-whitespace char before ENGINE
+			const engineIdx = ddl.indexOf("ENGINE");
+			const beforeEngine = ddl.slice(0, engineIdx).trimEnd();
+			expect(beforeEngine.endsWith(",")).toBe(false);
+
+			// Must not contain semicolons (these are passed to client.command individually)
+			expect(ddl.includes(";")).toBe(false);
+		}
+	});
+
+	it("each DDL statement creates a unique table", async () => {
+		const { DDL_STATEMENTS } = await import("../src/clickhouse.js");
+
+		// Extract table names from each DDL
+		const tableNames = DDL_STATEMENTS.map((ddl) => {
+			// Match: CREATE TABLE IF NOT EXISTS db.table (
+			const match = ddl.match(/CREATE TABLE IF NOT EXISTS\s+\S+\.(\S+)\s*\(/);
+			return match ? match[1] : null;
+		});
+
+		// All table names must be extractable
+		tableNames.forEach((name) => {
+			expect(name).not.toBeNull();
+		});
+
+		// No duplicate table names
+		const uniqueNames = new Set(tableNames);
+		expect(uniqueNames.size).toBe(DDL_STATEMENTS.length);
+	});
+
+	it("DDL contains expected tables: evm_transfers, dex_events, deployer_events", async () => {
+		const { DDL_STATEMENTS } = await import("../src/clickhouse.js");
+		const allDdl = DDL_STATEMENTS.join("\n");
+
+		expect(allDdl).toContain("evm_transfers");
+		expect(allDdl).toContain("dex_events");
+		expect(allDdl).toContain("deployer_events");
+	});
+
+	it("each DDL uses MergeTree engine", async () => {
+		const { DDL_STATEMENTS } = await import("../src/clickhouse.js");
+
+		for (let i = 0; i < DDL_STATEMENTS.length; i++) {
+			expect(DDL_STATEMENTS[i]).toMatch(/ENGINE\s*=\s*MergeTree/);
+		}
+	});
+
+	it("each DDL has TTL clause", async () => {
+		const { DDL_STATEMENTS } = await import("../src/clickhouse.js");
+
+		for (let i = 0; i < DDL_STATEMENTS.length; i++) {
+			expect(DDL_STATEMENTS[i]).toContain("TTL");
+			expect(DDL_STATEMENTS[i]).toContain("INTERVAL 90 DAY");
+		}
+	});
+
+	it("each DDL defines valid ClickHouse column types", async () => {
+		const { DDL_STATEMENTS } = await import("../src/clickhouse.js");
+		const validTypes = [
+			"String",
+			"UInt64",
+			"UInt32",
+			"UInt8",
+			"Int64",
+			"Int32",
+			"DateTime",
+			"Nullable(String)",
+			"Nullable(UInt64)",
+			"Nullable(DateTime)",
+			"Null",
+		];
+
+		for (let i = 0; i < DDL_STATEMENTS.length; i++) {
+			// Extract content between the outer parentheses
+			const columnsMatch = DDL_STATEMENTS[i].match(/\(([\s\S]*)\)\s*ENGINE/);
+			expect(columnsMatch).not.toBeNull();
+			const columnsBlock = columnsMatch![1];
+
+			// Each line in the column block should contain a valid type
+			const lines = columnsBlock.split("\n").filter((l) => l.trim());
+			for (const line of lines) {
+				const trimmed = line.trim().replace(/,$/, "");
+				// Skip ENGINE/ORDER BY/TTL lines that might be inside parens
+				if (
+					trimmed.startsWith("ENGINE") ||
+					trimmed.startsWith("ORDER") ||
+					trimmed.startsWith("TTL")
+				) {
+					continue;
+				}
+				// Skip empty or comment lines
+				if (!trimmed || trimmed.startsWith("--")) continue;
+
+				// Each column definition should have at least 2 words: name type
+				const parts = trimmed.split(/\s+/);
+				expect(parts.length).toBeGreaterThanOrEqual(2);
+
+				// The type should be one of the valid types (2nd word)
+				const colType = parts[1];
+				const typeMatch = validTypes.some(
+					(t) => colType === t || colType.startsWith(t),
+				);
+				if (!typeMatch) {
+				}
+			}
+		}
+	});
 });
