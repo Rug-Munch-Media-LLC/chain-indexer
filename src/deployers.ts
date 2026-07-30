@@ -117,9 +117,10 @@ function writeDeployments(chainId: string, deployments: Deployment[]) {
 
 	// ── ClickHouse output (new) ──
 	writeDeploymentsClickHouse(chainId, deployments).catch((err) => {
+		const reason = err instanceof Error ? err.message : String(err);
 		logger.error(
 			{ chain: chainId, err },
-			"ClickHouse deployer_events batch write failed",
+			`ClickHouse deployer_events batch write failed: ${reason}`,
 		);
 	});
 }
@@ -159,9 +160,10 @@ async function writeDeploymentsClickHouse(
 			"ClickHouse deployer_events inserted",
 		);
 	} catch (err) {
+		const reason = err instanceof Error ? err.message : String(err);
 		logger.error(
 			{ err, chain: chainId, count: values.length },
-			"ClickHouse deployer_events insert failed",
+			`ClickHouse deployer_events insert failed: ${reason}`,
 		);
 	}
 }
