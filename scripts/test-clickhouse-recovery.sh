@@ -15,33 +15,27 @@ mkdir -p "$TEMP_DIR"
 echo "=== ClickHouse Recovery Test ==="
 echo "Chain: $CHAIN | Date: $DATE"
 
-# Step 1: Pull Parquet from B2 (or R2 while migration in progress)
+# Step 1: Pull Parquet from B2 (chain-data/parquet)
 echo "[1/4] Pulling Parquet from backup..."
 REMOTE="${B2_REMOTE:-b2-crypt}"
 PARQUET_PATH="${REMOTE}:chain-data/parquet/${CHAIN}/${DATE//-/\/}/"
 rclone copy "$PARQUET_PATH" "$TEMP_DIR/parquet/" --include "*.parquet" --progress 2>&1 || {
-	# Fallback to R2 if B2 doesn't have it yet
-	echo "B2 miss, trying R2..."
-	rclone copy "r2-crypt:backups/chain-indexer-parquet/${CHAIN}/${DATE//-/\/}/" "$TEMP_DIR/parquet/" --include "*.parquet" --progress 2>&1 || {
-		echo "SKIP: No Parquet for $CHAIN on $DATE"
-		exit 0
-	}
+	echo "SKIP: No Parquet for $CHAIN on $DATE at $PARQUET_PATH"
+	echo "  Data may not have been exported yet, or B2 remote is offline."
+	exit 0
 }
 
-PARQUET_COUNT=$(ls "$TEMP_DIR/parquet/"*.parquet 2>/dev/null | wc -l)
+PARQUET_COUNT=$(find "$TEMP_DIR/parquet/" -name '*.parquet' 2>/dev/null | wc -l)
 echo "  Parquet files: $PARQUET_COUNT"
 
 # Step 2: Load into DuckDB
 echo "[2/4] Loading into DuckDB..."
-RECOVERED=$(duckdb -c "
-  SELECT count(*) as total 
-  FROM read_parquet('$TEMP_DIR/parquet/*.parquet');
-" -csv | tail -1)
+RECOVERED=$(echo "SELECT count(*) FROM read_parquet('$TEMP_DIR/parquet/*.parquet');" | duckdb -csv 2>/dev/null | tail -1)
 echo "  Recovered events: $RECOVERED"
 
 # Step 3: Compare with ClickHouse live
 echo "[3/4] Comparing with ClickHouse..."
-CH_COUNT=$(clickhouse-client --query "
+CH_COUNT=$(docker exec rmi-clickhouse clickhouse-client --query "
   SELECT count() 
   FROM wallet_memory.evm_transfers 
   WHERE chain = '$CHAIN' 
