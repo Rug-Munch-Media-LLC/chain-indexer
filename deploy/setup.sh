@@ -7,10 +7,10 @@
 #
 set -euo pipefail
 
-REPO_DIR="/srv/work/repos/chain-indexer"
+REPO_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")"
 DEPLOY_DIR="$REPO_DIR/deploy"
 DATA_DIR="/path/to/data/chain-indexer/jsonl"
-STATE_DIR="/srv/data/chain-indexer/state"
+STATE_DIR="${DATA_DIR:-/var/data/chain-indexer}/state"
 ENV_FILE="$REPO_DIR/.env"
 ENV_EXAMPLE="$DEPLOY_DIR/.env.example"
 SERVICE_NAME="chain-indexer.service"

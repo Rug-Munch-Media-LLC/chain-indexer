@@ -857,7 +857,7 @@ await Promise.all([...runners, ...bridgeRunners]);
 Both Solana and bridge events are written to the same directory structure:
 
 ```
-/srv/data/chain-indexer/jsonl/
+[DATA_DIR]/jsonl/
 ├── ethereum/
 │   ├── 2026-07-12/
 │   │   ├── events.jsonl       # ERC-20 transfers + bridge events
