@@ -23,5 +23,6 @@ COPY src/ ./src/
 VOLUME ["/data"]
 
 ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=3072"
 
 ENTRYPOINT ["node", "--import", "tsx", "src/index.ts"]

@@ -1,23 +1,37 @@
 [Unit]
-Description=Chain Indexer — Multi-chain blockchain data ingestion
-After=network-online.target
-Wants=network-online.target
+Description=Chain Indexer — Multi-chain blockchain data ingestion (Docker)
+After=docker.service network-online.target
+Wants=docker.service network-online.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/chain-indexer
-Environment=NODE_ENV=production
-Environment=DATA_DIR=/var/lib/chain-indexer/jsonl
-Environment=STATE_DIR=/var/lib/chain-indexer/state
-Environment=CLICKHOUSE_DATABASE=wallet_memory
-EnvironmentFile=/opt/chain-indexer/.env
-
-ExecStart=/usr/bin/node --import tsx /opt/chain-indexer/src/index.ts
 Restart=always
 RestartSec=10
+
+ExecStartPre=-/usr/bin/docker stop rmi-chain-indexer 2>/dev/null
+ExecStartPre=-/usr/bin/docker rm rmi-chain-indexer 2>/dev/null
+ExecStartPre=/usr/bin/docker pull chain-indexer:latest
+
+ExecStart=/usr/bin/docker run \
+  --name rmi-chain-indexer \
+  --restart no \
+  --network host \
+  --memory=4g \
+  --memory-reservation=3g \
+  --memory-swap=4g \
+  -e NODE_ENV=production \
+  -e NODE_OPTIONS="--max-old-space-size=3072" \
+  -e DATA_DIR=/data \
+  -e STATE_DIR=/data/state \
+  -e CLICKHOUSE_DATABASE=wallet_memory \
+  --env-file /path/to/chain-indexer/.env \
+  -v /path/to/data/chain-indexer:/data \
+  chain-indexer:latest
+
+ExecStop=/usr/bin/docker stop -t 30 rmi-chain-indexer
+
 LimitNOFILE=65536
-MemoryMax=4G
 
 StandardOutput=journal
 StandardError=journal
