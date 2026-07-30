@@ -24,10 +24,18 @@ npm run build        # build project
 npm start            # start indexing
 ```
 
-## Git Policy
+## 🚨 GIT POLICY — NON-NEGOTIABLE
+
+1. **NEVER commit .env files, credentials, API keys, or tokens**
+2. **NEVER use HTTPS remotes with embedded passwords — SSH only**
+3. **NEVER commit before gitleaks passes** (`gitleaks detect --no-git`)
+4. **NEVER push to main without lefthook pre-commit passing**
+5. **All secrets come from gopass — NEVER hardcoded**
+6. **All repos must have: .gitignore, .gitleaks.toml, .lefthook.yml**
+7. **Internal IPs/hostnames use [INTERNAL] placeholder in public repos**
+8. **Any agent caught leaking secrets will have their work rejected**
 
 This repo:
 - Classification: OPEN SOURCE
 - Remotes: codeberg + github + gitlab + radicle (primary)
 - Commits: type(scope): description
-- Never commit: .env, secrets, internal IPs, security reports
