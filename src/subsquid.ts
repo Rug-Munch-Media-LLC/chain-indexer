@@ -42,6 +42,8 @@ interface ERC20Transfer {
 	/** Resolved token metadata (added during batch write — null when unknown) */
 	tokenSymbol: string | null;
 	tokenName: string | null;
+	/** Data source identifier */
+	source: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,6 +88,7 @@ function writeBatch(chainId: string, events: ERC20Transfer[]) {
 			...e,
 			tokenSymbol: meta?.symbol ?? null,
 			tokenName: meta?.name ?? null,
+			source: "subsquid",
 		};
 	});
 
@@ -131,6 +134,7 @@ async function writeBatchClickHouse(chainId: string, events: ERC20Transfer[]) {
 		log_index: e.logIndex,
 		token_symbol: e.tokenSymbol,
 		token_name: e.tokenName,
+		source: "subsquid",
 		ingested_at: now.toISOString(),
 	}));
 
@@ -210,6 +214,7 @@ export async function ingestEvmChain(cfg: ChainConfig): Promise<void> {
 					value: String(tx.event?.value ?? "0"),
 					tokenSymbol: null,
 					tokenName: null,
+					source: "subsquid",
 				});
 			}
 

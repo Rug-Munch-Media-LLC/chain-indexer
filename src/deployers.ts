@@ -112,7 +112,9 @@ function writeDeployments(chainId: string, deployments: Deployment[]) {
 	mkdirSync(dir, { recursive: true });
 	const file = join(dir, "deployments.jsonl");
 
-	const lines = deployments.map((e) => JSON.stringify(e)).join("\n") + "\n";
+	// Tag source on each deployment event before serializing
+	const tagged = deployments.map((e) => ({ ...e, source: "subsquid" }));
+	const lines = tagged.map((e) => JSON.stringify(e)).join("\n") + "\n";
 	appendFileSync(file, lines);
 
 	// ── ClickHouse output (new) ──
@@ -146,6 +148,7 @@ async function writeDeploymentsClickHouse(
 		tx_hash: e.txHash,
 		type: e.type,
 		factory: e.factory ?? null,
+		source: "subsquid",
 		ingested_at: now.toISOString(),
 	}));
 

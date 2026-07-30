@@ -176,6 +176,8 @@ export interface DexEvent {
 	amount1?: string;
 	/** Whale flag */
 	whale: boolean;
+	/** Data source: subsquid or lite_indexer */
+	source?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -254,7 +256,9 @@ function writeDexBatch(chainId: string, events: DexEvent[]) {
 	mkdirSync(dir, { recursive: true });
 	const file = join(dir, `events.jsonl`);
 
-	const lines = events.map((e) => JSON.stringify(e)).join("\n") + "\n";
+	// Tag source on each event before serializing
+	const tagged = events.map((e) => ({ ...e, source: e.source || "subsquid" }));
+	const lines = tagged.map((e) => JSON.stringify(e)).join("\n") + "\n";
 	appendFileSync(file, lines);
 
 	// ── ClickHouse output (new) ──
@@ -296,6 +300,7 @@ async function writeDexBatchClickHouse(chainId: string, events: DexEvent[]) {
 		amount0: e.amount0 ?? null,
 		amount1: e.amount1 ?? null,
 		whale: e.whale ? 1 : 0,
+		source: "subsquid",
 		ingested_at: now.toISOString(),
 	}));
 

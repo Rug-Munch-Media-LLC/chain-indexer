@@ -63,6 +63,7 @@ export const DDL_STATEMENTS: string[] = [
     log_index      UInt32,
     token_symbol   Nullable(String),
     token_name     Nullable(String),
+    source         LowCardinality(String) DEFAULT 'subsquid',
     ingested_at    DateTime
   ) ENGINE = MergeTree
   ORDER BY (chain, block_number, log_index)
@@ -90,6 +91,7 @@ export const DDL_STATEMENTS: string[] = [
     amount0          Nullable(String),
     amount1          Nullable(String),
     whale            UInt8,
+    source           LowCardinality(String) DEFAULT 'subsquid',
     ingested_at      DateTime
   ) ENGINE = MergeTree
   ORDER BY (chain, block_number, log_index)
@@ -105,6 +107,7 @@ export const DDL_STATEMENTS: string[] = [
     tx_hash        String,
     type           String,
     factory        Nullable(String),
+    source         LowCardinality(String) DEFAULT 'subsquid',
     ingested_at    DateTime
   ) ENGINE = MergeTree
   ORDER BY (chain, block_number)
