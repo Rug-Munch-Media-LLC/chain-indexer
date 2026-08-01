@@ -5,6 +5,8 @@
 # Run on Talos:
 #   On the deploy host: bash /srv/chain-indexer/deploy/setup.sh
 #
+# Migrated from R2 to B2 2026-07-31
+#
 set -euo pipefail
 
 REPO_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")"
@@ -27,17 +29,17 @@ echo ""
 echo "==> Checking prerequisites..."
 
 if ! command -v rclone &>/dev/null; then
-  echo "    [WARN] rclone not found. Install it:"
-  echo "           curl -sSL https://rclone.org/install.sh | bash"
-  echo "           (or: apt install rclone)"
+	echo "    [WARN] rclone not found. Install it:"
+	echo "           curl -sSL https://rclone.org/install.sh | bash"
+	echo "           (or: apt install rclone)"
 fi
 
 if ! command -v node &>/dev/null; then
-  echo "    [WARN] Node.js not found. Install Node >= 22."
+	echo "    [WARN] Node.js not found. Install Node >= 22."
 fi
 
 if [ ! -d "$REPO_DIR/node_modules" ]; then
-  echo "    [INFO] No node_modules found — run: cd $REPO_DIR && npm install"
+	echo "    [INFO] No node_modules found — run: cd $REPO_DIR && npm install"
 fi
 
 echo ""
@@ -55,39 +57,35 @@ echo ""
 
 echo "==> Setting up .env file..."
 if [ ! -f "$ENV_FILE" ]; then
-  cp "$ENV_EXAMPLE" "$ENV_FILE"
-  echo "    Created $ENV_FILE"
-  echo "    >>> EDIT IT with your R2 credentials before starting the service:"
-  echo "        nano $ENV_FILE"
+	cp "$ENV_EXAMPLE" "$ENV_FILE"
+	echo "    Created $ENV_FILE"
+	echo "    >>> EDIT IT with your B2 credentials before starting the service:"
+	echo "        nano $ENV_FILE"
 else
-  echo "    $ENV_FILE already exists — skipping"
+	echo "    $ENV_FILE already exists — skipping"
 fi
 echo ""
 
-# ── rclone R2 remote ──────────────────────────────────────────────────────
+# ── rclone B2 remote ──────────────────────────────────────────────────────
 
-echo "==> Configuring rclone R2 remote..."
+echo "==> Configuring rclone B2 remote..."
 if [ -f "$ENV_FILE" ]; then
-  # shellcheck disable=SC1090
-  set -a
-  source "$ENV_FILE"
-  set +a
+	# shellcheck disable=SC1090
+	set -a
+	source "$ENV_FILE"
+	set +a
 
-  R2_ENDPOINT="${R2_ENDPOINT_URL:-https://${R2_ACCOUNT_ID:-8f9bd9165c1250b426c66dc1967deefd}.r2.cloudflarestorage.com}"
-
-  if [ -n "${R2_ACCESS_KEY_ID:-}" ] && [ -n "${R2_SECRET_ACCESS_KEY:-}" ]; then
-    rclone config create r2 s3 provider=Cloudflare \
-      access_key_id="$R2_ACCESS_KEY_ID" \
-      secret_access_key="$R2_SECRET_ACCESS_KEY" \
-      endpoint="$R2_ENDPOINT" \
-      region=auto --non-interactive 2>/dev/null \
-      && echo "    rclone remote 'r2' created" \
-      || echo "    rclone remote 'r2' already exists (or config failed — that's OK, the app retries)"
-  else
-    echo "    R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY not set in .env — skipping rclone config"
-  fi
+	if [ -n "${B2_ACCOUNT_ID:-}" ] && [ -n "${B2_APPLICATION_KEY:-}" ]; then
+		rclone config create b2 b2 \
+			account="$B2_ACCOUNT_ID" \
+			key="$B2_APPLICATION_KEY" --non-interactive 2>/dev/null &&
+			echo "    rclone remote 'b2' created" ||
+			echo "    rclone remote 'b2' already exists (or config failed — that's OK, the app retries)"
+	else
+		echo "    B2_ACCOUNT_ID / B2_APPLICATION_KEY not set in .env — skipping rclone config"
+	fi
 else
-  echo "    No .env file found — skipping rclone config"
+	echo "    No .env file found — skipping rclone config"
 fi
 echo ""
 
@@ -112,7 +110,7 @@ echo "    - npm install ran in $REPO_DIR?"
 echo "    - rclone installed?"
 echo ""
 echo "  Quick start:"
-echo "    nano $ENV_FILE                   # set R2 credentials"
+echo "    nano $ENV_FILE                   # set B2 credentials"
 echo "    systemctl start chain-indexer    # start the service"
 echo "    systemctl status chain-indexer   # verify it's running"
 echo "    journalctl -u chain-indexer -f   # follow the logs"

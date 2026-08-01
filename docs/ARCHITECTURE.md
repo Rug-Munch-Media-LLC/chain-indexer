@@ -10,7 +10,7 @@
 
 The chain-indexer currently ingests 11 EVM chains via Subsquid Pipes SDK plus Tron via
 TronGrid. Events are written as NDJSON to disk, partitioned by `chain/YYYY-MM-DD/`, then
-synced to Cloudflare R2 via rclone.
+synced to Backblaze B2 via rclone. *(Migrated from R2 to B2 2026-07-31.)*
 
 This document defines the architecture for two new capabilities:
 
@@ -19,7 +19,7 @@ This document defines the architecture for two new capabilities:
 2. **Cross-chain bridge tracking** — Wormhole, LayerZero/Stargate, Across, and CCIP
    fund flows across chains.
 
-Both must feed into the same NDJSON → R2 pipeline with zero changes to `sync.ts`.
+Both must feed into the same NDJSON → B2 pipeline with zero changes to `sync.ts`.
 
 ---
 
@@ -34,11 +34,11 @@ Each ingestion source is a single file under `src/`:
 
 | File | Responsibility |
 |------|---------------|
-| `src/index.ts` | CLI, orchestration loop, periodic R2 sync |
+| `src/index.ts` | CLI, orchestration loop, periodic B2 sync |
 | `src/chains.ts` | `ChainConfig` interface, chain registry, `ENABLED_CHAINS` |
 | `src/subsquid.ts` | EVM ingestion via Subsquid Pipes SDK |
 | `src/tron.ts` | TRC-20 ingestion via TronGrid polling |
-| `src/sync.ts` | rclone push to R2 (read-only for new code) |
+| `src/sync.ts` | rclone push to B2 (read-only for new code) |
 
 ### 2.2 ChainConfig pattern
 
@@ -169,7 +169,7 @@ This means:
                                               ┌───────────────────┐
                     ┌──────────────────────┐  │  solana.ts        │
                     │  Helius Enhanced     │  │                   │
-                    │  Transactions API    │─▶│  Normalize →      │──▶ NDJSON → R2
+                    │  Transactions API    │─▶│  Normalize →      │──▶ NDJSON → B2
                     │  (historical backfill)│  │  TokenEvent       │
                     └──────────────────────┘  └───────────────────┘
                                               ▲
@@ -876,13 +876,13 @@ Both Solana and bridge events are written to the same directory structure:
 ```
 
 **Recommendation**: Write bridge events to the same `events.jsonl` per chain
-(not a separate file). This keeps the R2 sync simple and allows downstream
+(not a separate file). This keeps the B2 sync simple and allows downstream
 consumers to filter by `type` field. Bridge events have `type` values starting
 with `'bridge_'` for easy filtering.
 
-### 5.3 R2 Sync — No Changes Required
+### 5.3 B2 Sync — No Changes Required
 
-`sync.ts` uses `rclone sync "${DATA_DIR}" "r2:${R2_BUCKET}/jsonl/"`. New chain
+`sync.ts` uses `rclone sync "${DATA_DIR}" "b2:${B2_BUCKET}/jsonl/"`. New chain
 directories under `DATA_DIR` are picked up automatically. No code changes
 needed.
 
@@ -902,7 +902,7 @@ src/
 ├── chains.ts             # ChainConfig + registry [MODIFY — add solana config]
 ├── subsquid.ts           # EVM ERC-20 ingestion [NO CHANGE]
 ├── tron.ts               # Tron TRC-20 ingestion [NO CHANGE]
-├── sync.ts               # R2 sync [NO CHANGE]
+├── sync.ts               # B2 sync [NO CHANGE]
 │
 ├── solana.ts             # [NEW] Solana SPL + DEX ingestion
 │   - SOLANA_PROGRAMS constants

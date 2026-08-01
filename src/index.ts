@@ -3,12 +3,13 @@
  * chain-indexer — Multi-chain blockchain data ingestion
  *
  * Sources: Subsquid (EVM) → TronGrid (Tron) → free RPC pool (fallback)
- * Output: NDJSON → Parquet → Cloudflare R2
+ * Output: NDJSON → Parquet → Backblaze B2
+ * Migrated from R2 to B2 2026-07-31
  *
  * Usage:
  *   tsx src/index.ts                    # start all chains
  *   tsx src/index.ts --chain ethereum   # start one chain
- *   tsx src/index.ts --sync             # run R2 sync once and exit
+ *   tsx src/index.ts --sync             # run B2 sync once and exit
  */
 
 import { mkdirSync } from "node:fs";
@@ -26,7 +27,7 @@ import { ingestDexChain } from "./dex.js";
 import { startParquetScheduler } from "./parquet.js";
 import { ingestSolana } from "./solana.js";
 import { ingestEvmChain } from "./subsquid.js";
-import { syncToR2 } from "./sync.js";
+import { syncToB2 } from "./sync.js";
 import { ingestTron } from "./tron.js";
 
 const logger = pino({
@@ -40,10 +41,10 @@ const logger = pino({
 
 program
 	.name("chain-indexer")
-	.description("Multi-chain blockchain data ingestion → Parquet → R2")
+	.description("Multi-chain blockchain data ingestion → Parquet → B2")
 	.version("0.1.0")
 	.option("-c, --chain <id>", "Index a single chain (default: all enabled)")
-	.option("--sync", "Run R2 sync once and exit")
+	.option("--sync", "Run B2 sync once and exit")
 	.option("--data-dir <path>", "Data directory", DATA_DIR)
 	.option("--state-dir <path>", "State directory", STATE_DIR)
 	.parse();
@@ -51,13 +52,13 @@ program
 const opts = program.opts();
 
 // ---------------------------------------------------------------------------
-// R2 sync mode
+// B2 sync mode
 // ---------------------------------------------------------------------------
 
 if (opts.sync) {
-	logger.info("Running R2 sync");
-	await syncToR2();
-	logger.info("R2 sync complete");
+	logger.info("Running B2 sync");
+	await syncToB2();
+	logger.info("B2 sync complete");
 	process.exit(0);
 }
 
@@ -112,23 +113,23 @@ const runners = chains.map(async (cfg) => {
 });
 
 // ---------------------------------------------------------------------------
-// Periodic R2 sync (every 15 minutes)
+// Periodic B2 sync (every 15 minutes)
 // DISABLED by default: raw NDJSON sync was an uncompressed double-bake with
 // sync-deletes semantics (rclone sync deletes remote files not present
 // locally — torched local = torched "archive"). The compressed, verified,
 // immutable archive pipeline lives in scripts/chain-indexer-guard.sh
-// (r2:backups/chain-indexer/). Set R2_RAW_SYNC=on to re-enable.
+// (b2-crypt:backups/chain-indexer/). Set B2_RAW_SYNC=on to re-enable.
 // ---------------------------------------------------------------------------
 
-const rawSyncEnabled = process.env.R2_RAW_SYNC === "on";
+const rawSyncEnabled = process.env.B2_RAW_SYNC === "on";
 
 const syncInterval = rawSyncEnabled
 	? setInterval(
 			async () => {
 				try {
-					await syncToR2();
+					await syncToB2();
 				} catch (err) {
-					logger.error({ err }, "R2 sync failed");
+					logger.error({ err }, "B2 sync failed");
 				}
 			},
 			15 * 60 * 1000,
@@ -136,7 +137,7 @@ const syncInterval = rawSyncEnabled
 	: null;
 
 if (!rawSyncEnabled) {
-	logger.info("Raw R2 sync disabled (guard.sh owns the archive pipeline)");
+	logger.info("Raw B2 sync disabled (guard.sh owns the archive pipeline)");
 }
 
 // ---------------------------------------------------------------------------
@@ -160,13 +161,13 @@ process.on("SIGTERM", () => {
 
 	// Final sync with 30s timeout (don't hang shutdown on large syncs)
 	const timeout = setTimeout(() => {
-		logger.warn("Final R2 sync timed out — exiting");
+		logger.warn("Final B2 sync timed out — exiting");
 		process.exit(0);
 	}, 30_000);
 
-	syncToR2()
-		.then(() => logger.info("Final R2 sync complete"))
-		.catch((err) => logger.error({ err }, "Final R2 sync failed"))
+	syncToB2()
+		.then(() => logger.info("Final B2 sync complete"))
+		.catch((err) => logger.error({ err }, "Final B2 sync failed"))
 		.finally(() => {
 			clearTimeout(timeout);
 			process.exit(0);

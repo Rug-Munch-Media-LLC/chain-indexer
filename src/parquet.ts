@@ -2,7 +2,8 @@
  * Parquet Auto-Conversion Module
  *
  * Converts NDJSON files to Parquet using DuckDB,
- * then syncs the Parquet files to Cloudflare R2.
+ * then syncs the Parquet files to Backblaze B2.
+ * Migrated from R2 to B2 2026-07-31
  *
  * Runs every hour via startParquetScheduler() in index.ts.
  */
@@ -18,7 +19,7 @@ const logger = pino({ name: "parquet" });
 
 const PARQUET_DIR =
 	process.env.PARQUET_DIR || "/path/to/data/chain-indexer/parquet";
-const R2_BUCKET = process.env.R2_BUCKET || "rmi-data";
+const B2_BUCKET = process.env.B2_BUCKET || "rmi-data";
 
 // ---------------------------------------------------------------------------
 // Date helpers
@@ -142,14 +143,14 @@ function convertChainDate(chain: string, date: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// R2 sync (parquet)
+// B2 sync (parquet)
 // ---------------------------------------------------------------------------
 
-function syncParquetToR2(): void {
+function syncParquetToB2(): void {
 	if (!existsSync(PARQUET_DIR)) return;
 
 	try {
-		const cmd = `rclone sync "${PARQUET_DIR}" "r2:${R2_BUCKET}/parquet/" \
+		const cmd = `rclone sync "${PARQUET_DIR}" "b2:${B2_BUCKET}/parquet/" \
       --transfers 4 \
       --checkers 8 \
       --max-age 5m \
@@ -162,16 +163,16 @@ function syncParquetToR2(): void {
 			stdio: "pipe",
 		} as any);
 
-		logger.info({ output: output.trim() }, "Parquet R2 sync complete");
+		logger.info({ output: output.trim() }, "Parquet B2 sync complete");
 	} catch (err: any) {
 		if (
 			err.stderr?.includes("couldn't find") ||
 			err.stderr?.includes("not found")
 		) {
-			logger.warn("Parquet R2 sync skipped — rclone remote not configured");
+			logger.warn("Parquet B2 sync skipped — rclone remote not configured");
 			return;
 		}
-		logger.error({ err: err.stderr || err.message }, "Parquet R2 sync failed");
+		logger.error({ err: err.stderr || err.message }, "Parquet B2 sync failed");
 	}
 }
 
@@ -182,7 +183,7 @@ function syncParquetToR2(): void {
 /**
  * Run one full conversion cycle:
  * 1. Convert the previous hour's NDJSON → Parquet for every chain
- * 2. Sync Parquet files to R2
+ * 2. Sync Parquet files to B2
  */
 export async function runParquetConversion(): Promise<void> {
 	const d = previousDate();
@@ -203,7 +204,7 @@ export async function runParquetConversion(): Promise<void> {
 	}
 
 	if (converted > 0) {
-		syncParquetToR2();
+		syncParquetToB2();
 	}
 
 	logger.info(

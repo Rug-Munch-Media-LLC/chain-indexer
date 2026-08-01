@@ -1,10 +1,11 @@
 /**
- * R2 sync via rclone.
+ * B2 sync via rclone.
  *
- * Pushes local NDJSON files to Cloudflare R2.
+ * Pushes local NDJSON files to Backblaze B2.
  * A separate cron job converts NDJSON → Parquet using DuckDB.
  *
- * Requires: rclone installed, R2 remote configured via env vars.
+ * Requires: rclone installed, B2 remote configured via env vars.
+ * Migrated from R2 to B2 2026-07-31
  */
 
 import { execSync } from "node:child_process";
@@ -14,10 +15,9 @@ import { DATA_DIR } from "./chains.js";
 
 const logger = pino({ name: "sync" });
 
-const R2_BUCKET = process.env.R2_BUCKET || "rmi-data";
-const R2_ENDPOINT = process.env.R2_ENDPOINT_URL || "";
-const R2_ACCESS_KEY = process.env.R2_ACCESS_KEY_ID || "";
-const R2_SECRET_KEY = process.env.R2_SECRET_ACCESS_KEY || "";
+const B2_BUCKET = process.env.B2_BUCKET || "rmi-data";
+const B2_ACCOUNT_ID = process.env.B2_ACCOUNT_ID || "";
+const B2_APPLICATION_KEY = process.env.B2_APPLICATION_KEY || "";
 
 let rcloneConfigured = false;
 
@@ -28,19 +28,16 @@ function ensureRcloneConfig() {
 		return;
 	}
 
-	// Configure rclone R2 remote if env vars are set
-	if (R2_ENDPOINT && R2_ACCESS_KEY && R2_SECRET_KEY) {
+	// Configure rclone B2 remote if env vars are set
+	if (B2_ACCOUNT_ID && B2_APPLICATION_KEY) {
 		try {
 			execSync(
-				`rclone config create r2 s3 provider=Cloudflare \
-        access_key_id="${R2_ACCESS_KEY}" \
-        secret_access_key="${R2_SECRET_KEY}" \
-        endpoint="${R2_ENDPOINT}" \
-        region=auto --non-interactive 2>/dev/null || true`,
+				`rclone config create b2 b2 account="${B2_ACCOUNT_ID}" \
+        key="${B2_APPLICATION_KEY}" --non-interactive 2>/dev/null || true`,
 				{ stdio: "pipe" },
 			);
 			rcloneConfigured = true;
-			logger.info("R2 rclone remote configured");
+			logger.info("B2 rclone remote configured");
 		} catch {
 			logger.warn("rclone config may already exist — continuing");
 			rcloneConfigured = true;
@@ -49,10 +46,10 @@ function ensureRcloneConfig() {
 }
 
 /**
- * Sync local JSONL data to R2.
- * Uses rclone sync — one-directional, never deletes from R2.
+ * Sync local JSONL data to B2.
+ * Uses rclone sync — one-directional, never deletes from B2.
  */
-export async function syncToR2(): Promise<void> {
+export async function syncToB2(): Promise<void> {
 	ensureRcloneConfig();
 
 	if (!existsSync(DATA_DIR)) {
@@ -61,7 +58,7 @@ export async function syncToR2(): Promise<void> {
 	}
 
 	try {
-		const cmd = `rclone sync "${DATA_DIR}" "r2:${R2_BUCKET}/jsonl/" \
+		const cmd = `rclone sync "${DATA_DIR}" "b2:${B2_BUCKET}/jsonl/" \
       --progress \
       --transfers 4 \
       --checkers 8 \
@@ -75,11 +72,11 @@ export async function syncToR2(): Promise<void> {
 			stdio: "pipe",
 		});
 
-		logger.info({ output: output.trim() }, "R2 sync complete");
+		logger.info({ output: output.trim() }, "B2 sync complete");
 	} catch (err: any) {
 		if (err.stderr?.includes("couldn't find")) {
 			logger.warn(
-				"R2 sync skipped — rclone remote not found. Set R2_* env vars.",
+				"B2 sync skipped — rclone remote not found. Set B2_* env vars.",
 			);
 			return;
 		}
