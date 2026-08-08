@@ -1,5 +1,20 @@
 # Chain Indexer
 
+> ## 🚫 ARCHIVED — 2026-08-08
+>
+> **This repository is archived and superseded by
+> [`lite-chain-indexer`](/srv/work/repos/lite-chain-indexer)**, the canonical
+> production indexing pipeline.
+>
+> **Why:** the Subsquid-based pipeline has fatal production bugs — streams
+> always restart from genesis, there is zero reorg handling, and the rclone
+> sync step is dangerous when run against live archives. `lite-chain-indexer`
+> fixes all three and is strictly superior.
+>
+> **Do not run, deploy, or extend this code.** See [ARCHIVED.md](ARCHIVED.md)
+> for the full archival record and death reasons. The repo is kept read-only
+> for reference.
+
 Multi-chain blockchain indexer for RugMunch Media. Streams decoded events
 from EVM chains (Ethereum, BSC, Arbitrum, Base, Polygon, TRON) and Solana
 via Subsquid Pipes SDK into compressed NDJSON archives.
