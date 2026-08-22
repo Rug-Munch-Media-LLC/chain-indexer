@@ -3,7 +3,7 @@
 > ## 🚫 ARCHIVED — 2026-08-08
 >
 > **This repository is archived and superseded by
-> [`lite-chain-indexer`](/srv/work/repos/lite-chain-indexer)**, the canonical
+> [`lite-chain-indexer`](https://git.rugmunch.io/RugMunchMedia/lite-chain-indexer)**, the canonical
 > production indexing pipeline.
 >
 > **Why:** the Subsquid-based pipeline has fatal production bugs — streams

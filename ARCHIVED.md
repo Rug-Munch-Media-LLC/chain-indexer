@@ -2,7 +2,7 @@
 
 **Archival date:** 2026-08-08
 **Status:** READ-ONLY / archived. Do not run, deploy, or extend.
-**Replacement:** [`lite-chain-indexer`](/srv/work/repos/lite-chain-indexer) — the
+**Replacement:** [`lite-chain-indexer`](https://git.rugmunch.io/RugMunchMedia/lite-chain-indexer) — the
 canonical production indexing pipeline.
 
 ## Summary
@@ -29,7 +29,7 @@ reference.
 
 ## Replacement
 
-`lite-chain-indexer` (`/srv/work/repos/lite-chain-indexer`) addresses all three
+`lite-chain-indexer` (`lite-chain-indexer`) addresses all three
 failures: durable checkpoints, reorg handling, and safe archive shipping. It is
 the canonical production pipeline for RugMunch Media indexing.
 
