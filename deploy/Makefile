@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 SSH := ssh netcup
-REPO_DIR := /srv/work/repos/chain-indexer
+REPO_DIR ?= /opt/chain-indexer
 
 .PHONY: help deploy start stop restart logs status
 
