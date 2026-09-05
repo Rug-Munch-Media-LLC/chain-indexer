@@ -103,7 +103,7 @@ const REGISTRY: Record<string, Record<string, TokenMeta>> = {
 			name: "PayPal USD",
 			decimals: 6,
 		},
-		"0x3845badAde8e6dFF049820680d1F14bD3903a5d0": {
+		"0x3845badade8e6dff049820680d1f14bd3903a5d0": {
 			symbol: "SAND",
 			name: "The Sandbox",
 			decimals: 18,
@@ -394,7 +394,7 @@ const REGISTRY: Record<string, Record<string, TokenMeta>> = {
 	},
 	// ── Solana SPL tokens (mint addresses — base58) ──
 	solana: {
-		epjfwdd5aufqssemimt4otbu27r4pcf2avjphgvqhnjx: {
+		epjfwdd5aufqssqem2qn1xzybapc8g4weggkzwybtnjx: {
 			symbol: "USDC",
 			name: "USD Coin",
 			decimals: 6,
