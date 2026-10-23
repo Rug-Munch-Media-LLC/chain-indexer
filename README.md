@@ -36,7 +36,7 @@ via Subsquid Pipes SDK into compressed NDJSON archives.
 
 ```bash
 # Clone the repo
-git clone https://github.com/RugMunchMedia/chain-indexer.git
+git clone https://github.com/Rug-Munch-Media-LLC/chain-indexer.git
 cd chain-indexer
 
 # Install dependencies
