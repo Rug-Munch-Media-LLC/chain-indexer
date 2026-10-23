@@ -1,4 +1,11 @@
-# Chain Indexer
+# Chain Indexer (archived)
+
+> Subsquid-based multi-chain indexer, archived 2026-08-08 and superseded by lite-chain-indexer.
+
+**License:** [MIT](LICENSE) · **Canonical:** https://git.rugmunch.io/RugMunchMedia/chain-indexer
+**Mirrors:** [GitHub](https://github.com/Rug-Munch-Media-LLC) · [GitLab](https://gitlab.com/rug-munch-media-group) · [Codeberg](https://codeberg.org/RugMunchMedia)
+
+**Clone over Nostr:** `git clone nostr://npub1e97559tn2j6j02shalmn5x6xv5jt8ejlclh6sta8nln0n55whwtszyrqud/git.cryptorugmunch.com/chain-indexer` (GRASP)
 
 > ## 🚫 ARCHIVED — 2026-08-08
 >
